@@ -27,7 +27,8 @@
   },
   "sidebar": [
     {
-      "group": "Getting Started",
+      "group": "Integración Android",
+      "tabs": "pascual",
       "pages": [
         {
           "title": "Getting to know docs.page",
@@ -46,12 +47,12 @@
     {
       "id": "pascual",
       "title": "Integración de Pascual",
-      "href": "/pascual/pascual_index.mdx"
+      "href": "/pascual"
     },
     {
       "id": "matias",
       "title": "Integración de Matias",
-      "href": "/pascual/matias_index.mdx"
+      "href": "/matias"
     }
   ]
 }
