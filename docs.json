@@ -27,8 +27,62 @@
   },
   "sidebar": [
     {
-      "group": "Integración Android",
-      "tabs": "pascual",
+      "group": "Integración del SDK",
+      "tab": "pascual",
+      "icon": "sdk",
+      "pages": [
+        {
+          "title": "Android (Kotlin)",
+          "href": "/pascual/android",
+          "icon": "android"
+        },
+        {
+          "title": "JetPack Compose (Kotlin)",
+          "href": "/pascual/android_jetpack",
+          "icon": "android"
+        },
+        {
+          "title": "iOS (Swift/Objective-C)",
+          "href": "/pascual/ios",
+          "icon": "ios"
+        },
+        {
+          "title": "Flutter (Dart)",
+          "href": "/pascual/lutter",
+          "icon": "dart"
+        }
+      ]
+    },
+    {
+      "group": "Integración del SDK",
+      "tab": "matias",
+      "icon": "sdk",
+      "pages": [
+        {
+          "title": "Android (Kotlin)",
+          "href": "/matias/android",
+          "icon": "android"
+        },
+        {
+          "title": "JetPack Compose (Kotlin)",
+          "href": "/matias/android_jetpack",
+          "icon": "android"
+        },
+        {
+          "title": "iOS (Swift/Objective-C)",
+          "href": "/matias/ios",
+          "icon": "ios"
+        },
+        {
+          "title": "Flutter (Dart)",
+          "href": "/matias/lutter",
+          "icon": "dart"
+        }
+      ]
+    },
+    {
+      "group": "Otras tareas",
+      "icon": "work",
       "pages": [
         {
           "title": "Getting to know docs.page",
