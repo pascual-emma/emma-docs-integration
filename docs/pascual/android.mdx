@@ -1,0 +1,91 @@
+---
+title: Integración con Android
+description: A continuación se muestra cómo se ha organizado la generación del análisis.
+---
+
+## Configuración básica
+Respecto a las empresas del sector, he encontrado una que tiene un asistente de integración. En concreto [AppsFlyer](https://dj.dev.appsflyer.com/).
+Creo que EMMA podría hacer algo similar para facilitar todo el proceso de integración a los desarrolladores.
+
+## Integración y gestión de dependencias
+Comenzamos la integración del SDK siguiendo las indicaciones de la [documentación](https://developer.emma.io/es/android/integracion-sdk). Para ello, creamos un proyecto en
+Android Studio con la propiedad Empty Views Activity, en Kotlin, con el SDK mínimo API 24 (“Nougat”, Android 7.0 ) y
+usando Kotlin DSL.
+
+Al introducir el repositorio, no se especifica en qué bloque debe de ir. Dado que es un repositorio, creo que deberíamos
+de indicarlo de la siguiente forma:
+```kotlin title="settings.gradle.kts(:project)"
+dependencyResolutionManagement {
+    repositories {
+        maven("https://repo.emma.io/emma")
+    }
+}
+```
+<Info>
+Quizás, para desarrolladores poco experimentados sea más claro especificar todas las etiquetas padre. Además, veo que la
+documentación menciona el repositorio con el formato de bloque. Si solo se incluye el repositorio y no se configura nada
+más, podría sustituirse por la versión simplificada (la que he puesto). También creo que hay que corregir el párrafo
+donde se menciona este repositorio, puesto que hace mención al fichero `build.gradle` y, en realidad, iría en `settings.gradle`.
+</Info>
+
+A continuación, respecto a las dependencias que se mencionan, considero que se podría utilizar la sintaxis de versiones
+de catálogo. Es una recomendación que hace el IDE y se simplifica mucho la sintaxis. Si se usa la versión de catálogo es
+cierto que hay que mostrar la configuración del fichero libs.versions.toml y puede ser más engorroso. Además, convendría
+eliminar el uso de “+” en las invocaciones de dependencias, puede resultar inestable según nos recomienda el IDE. Por lo
+que cambiaría el código a la siguiente forma:
+```kotlin title="settings.gradle.kts (:app)"
+dependencies {
+  implementation(libs.emmasdk)
+}
+```
+```kotlin title="libs.versions.toml"
+[version]
+emmasdk = "4.15.4"
+
+[libraries]
+emmasdk = { module = "io.emma:eMMaSDK", version.ref = "emmasdk" }
+```
+A continuación, en el epígrafe de integración básica se menciona la clave de sesión pero no se utiliza hasta varios
+epígrafes después. Así que no lo mencionaría hasta entonces.
+
+### Ofuscación
+Creo que el apartado actual de ProGuard que hay actualmente, se puede renombrar por Ofuscación y ponerlo dentro del
+apartado Integración básica. A pesar de esto y, en comparación con otras fuentes de documentación, las reglas que se
+proporcionan son relativamente claras. Si bien es cierto que no se menciona nada sobre R8 (la herramienta de ofuscación
+de Android), pero en términos generales creo que está bien este apartado.
+
+### Referencias en la instalación
+En la documentación de integración no se observa ningún punto donde se mencionen las referencias de instalación,
+como sí hacen [Adjust](https://dev.adjust.com/en/sdk/android#set-up-install-referrer) y [AppsFlyer](https://dev.appsflyer.com/hc/docs/install-android-sdk#adding-store-referrer-libraries).
+
+### Permisos requeridos
+Respecto a los permisos requeridos del SDK, aquellos que trae por defecto no los incluiría dentro de un bloque de código.
+Simplemente, los mencionaría. Quizás, ver el bloque de código induce a no leer el párrafo de arriba y directamente
+copiar el código. Solo dejaría el bloque de código que es necesario poner.
+
+Además, en el apartado se incluye por defecto la identificación de anuncios, pero no se menciona la Ley de Protección de
+la Privacidad en Línea para Niños (COPPA) como sí se hace en la documentación de [Adjust](https://dev.adjust.com/en/sdk/android#add-permissions)
+o [AppsFlyer](https://dev.appsflyer.com/hc/docs/install-android-sdk#the-ad_id-permission).
+
+### Integración de Huawei
+
+## Inicialización de la librería
+## Inicio aplazado de librería
+## Privacidad
+## Powlinks
+## Notificaciones push
+### Configuración de Firebase
+## Integración behavior
+### Registro e inicio de sesión de usuarios
+### Transacciones
+### Eventos personalizados
+## Perfil de usuario
+### Atribución
+## Opciones avanzadas
+### ProGuard
+## Integración In-App Messaging
+### NativeAds
+### StartViews, Adball, Banner y StripView
+### Cupones
+## Plugins personalizados
+## Revisión de enlaces caídos o rotos
