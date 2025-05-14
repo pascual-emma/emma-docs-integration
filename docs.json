@@ -1,21 +1,57 @@
 {
-  "name": "My Docs",
-  "description": "My documentation site",
-  "sidebar": [
-  {
-    "group": "Getting Started",
-    "pages": [
+  "name": "Documentación técnica de integración SDK EMMA",
+  "description": "Esta documentación se ha generado a partir de lo analizado.",
+  "theme": {
+    "primary": "#00a263"
+  },
+  "header": {
+    "showThemeToggle": true,
+    "links": [
       {
-        "title": "Getting to know docs.page",
-        "href": "/",
-        "icon": "rocket"
+        "href": "https://developer.emma.io/es/home",
+        "title": "Developer Hub"
       },
       {
-        "title": "Next Steps",
-        "href": "/next-steps",
-        "icon": "arrow-right"
+        "href": "https://docs.emma.io/es/home",
+        "title": "Marketer Hub"
+      },
+      {
+        "href": "https://ng.emma.io/es/legacy/main/executive",
+        "title": "Plataforma"
       }
     ]
-  }
-]
+  },
+  "social": {
+    "linkedin": "arkanaio",
+    "github": "EMMADevelopment"
+  },
+  "sidebar": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        {
+          "title": "Getting to know docs.page",
+          "href": "/",
+          "icon": "rocket"
+        },
+        {
+          "title": "Next Steps",
+          "href": "/next-steps",
+          "icon": "arrow-right"
+        }
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "id": "pascual",
+      "title": "Integración de Pascual",
+      "href": "/pascual/pascual_index.mdx"
+    },
+    {
+      "id": "matias",
+      "title": "Integración de Matias",
+      "href": "/pascual/matias_index.mdx"
+    }
+  ]
 }
