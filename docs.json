@@ -1,5 +1,5 @@
 {
-  "name": "Documentación técnica de integración SDK EMMA",
+  "name": "Documentación técnica de integración",
   "description": "Esta documentación se ha generado a partir de lo analizado.",
   "theme": {
     "primary": "#00a263"
@@ -27,36 +27,7 @@
   },
   "sidebar": [
     {
-      "group": "Integración del SDK",
-      "tab": "pascual",
-      "icon": "sdk",
-      "pages": [
-        {
-          "title": "Android (Kotlin)",
-          "href": "/pascual/android",
-          "icon": "android"
-        },
-        {
-          "title": "JetPack Compose (Kotlin)",
-          "href": "/pascual/android_jetpack",
-          "icon": "android"
-        },
-        {
-          "title": "iOS (Swift/Objective-C)",
-          "href": "/pascual/ios",
-          "icon": "ios"
-        },
-        {
-          "title": "Flutter (Dart)",
-          "href": "/pascual/lutter",
-          "icon": "dart"
-        }
-      ]
-    },
-    {
-      "group": "Integración del SDK",
-      "tab": "matias",
-      "icon": "sdk",
+      "group": "Integración de Matías",
       "pages": [
         {
           "title": "Android (Kotlin)",
@@ -64,14 +35,9 @@
           "icon": "android"
         },
         {
-          "title": "JetPack Compose (Kotlin)",
-          "href": "/matias/android_jetpack",
-          "icon": "android"
-        },
-        {
           "title": "iOS (Swift/Objective-C)",
           "href": "/matias/ios",
-          "icon": "ios"
+          "icon": "mac"
         },
         {
           "title": "Flutter (Dart)",
@@ -81,8 +47,28 @@
       ]
     },
     {
+      "group": "Integración de Pascual",
+      "pages": [
+        {
+          "title": "Android (Kotlin)",
+          "href": "/pascual/android",
+          "icon": "android"
+        },
+        {
+          "title": "iOS (Swift/Objective-C)",
+          "href": "/pascual/ios",
+          "icon": "mac"
+        },
+        {
+          "title": "Flutter (Dart)",
+          "href": "/pascual/lutter",
+          "icon": "dart"
+        }
+      ]
+    },
+    {
       "group": "Otras tareas",
-      "icon": "work",
+      "icon": "job",
       "pages": [
         {
           "title": "Getting to know docs.page",
@@ -95,18 +81,6 @@
           "icon": "arrow-right"
         }
       ]
-    }
-  ],
-  "tabs": [
-    {
-      "id": "pascual",
-      "title": "Integración de Pascual",
-      "href": "/pascual"
-    },
-    {
-      "id": "matias",
-      "title": "Integración de Matias",
-      "href": "/matias"
     }
   ]
 }

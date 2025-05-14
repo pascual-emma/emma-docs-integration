@@ -68,6 +68,103 @@ la Privacidad en Línea para Niños (COPPA) como sí se hace en la documentació
 o [AppsFlyer](https://dev.appsflyer.com/hc/docs/install-android-sdk#the-ad_id-permission).
 
 ### Integración de Huawei
+En cuanto a la sección de Huawei, parece que su configuración tiene varios pasos más que otros proveedores. Por la
+disposición de la documentación, me ha costado identificar qué partes son de Huawei y cuáles son genéricas para Android.
+Sobre todo las primeras veces que consulté la documentación. Quizás estaría bien separar la implementación de Huawei en
+una página a parte (donde se explique toda la implementación desde cero) o bien poner un bloque de texto (de un color
+diferente al fondo de la documentación) desplegable.
+
+También se usan direcciones URL con protocolo HTTP que Android Studio las reconoce como inseguras. Ante esto tenemos dos
+opciones, seguir usando la URL insegura o usar URL HTTPS. A continuación, se muestra un ejemplo explicativo con las líneas
+necesarias.
+
+<Card title="Configuración de conexión HTTP y HTTPS">
+Se debe incluir una instrucción específica para permitir a Gradle la conexión con repositorios inseguros. Es útil para
+repositorios que no dispongan de conexión HTTP. En la documentación no se menciona nada de esta configuración y da error
+al construir el proyecto.
+```kotlin title="build.gradle (:proyect)"
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri("http://developer.huawei.com/repo/")
+            isAllowInsecureProtocol = true
+        }
+    }
+}
+```
+Se modifica la URL para que sea HTTPS, evita usar configuraciones como las del caso anterior.
+```kotlin title="build.gradle (:proyect)"
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://developer.huawei.com/repo/")
+    }
+}
+```
+</Card>
+En el bloque de código, no se especifica qué fichero build es donde van las dependencias y no se usan versiones de catálogo,
+por lo que sugiero cambiarlo a algo como así:
+
+Se puede observar que no se incluye el bloque allprojects{}. Este bloque ya no se usa, así que lo he eliminado.
+
+```kotlin title="build.gradle (:project)"
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://developer.huawei.com/repo/")
+    }
+    dependencies {
+        classpath(libs.gradle)
+        classpath(libs.agcp)
+    }
+}
+```
+Importante poner bien las versiones o, en su defecto, poner “latest version”. Con eso evitamos errores a la hora de
+construir el proyecto y que pueda creerse que se deben a otras cosas.
+```kotlin title="libs.versions.toml "
+[version]
+agcp = "1.9.1.301"
+gradle = "8.9.1"
+
+[libraries]
+agcp = { module = "com.huawei.agconnect:agcp", version.ref = "agcp" }
+gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
+```
+Respecto al fichero de dependencias de la aplicación, se usa una sintaxis para aplicar el plugin, que actualmente no es
+válida. La línea indicada en la documentación tiene que ir dentro de otro bloque. Tal y como se indica a continuación.
+```kotlin title="build.gradle (:app)"
+plugins { // [!code ++]
+    id("com.huawei.agconnect") // [!code ++]
+} // [!code ++]
+
+dependencies {
+    // other dependencies // [!code --]
+    implementation 'com.huawei.hms:ads-identifier:3.4.62.300' // [!code --]
+    implementation(libs.ads.identifier) // [!code ++]
+}
+apply plugin: 'com.huawei.agconnect' // [!code --]
+
+```
+```kotlin title="libs.versions.toml "
+[versions]
+adsIdentifier = "3.4.62.300"
+
+[libraries]
+ads-identifier = { module = "com.huawei.hms:ads-identifier", version.ref = "adsIdentifier" }
+```
+
+Considero que puede ser útil mencionar o recomendar la consulta de las últimas versiones de las dependencias usadas,
+con el fin de no generar conflictos. A lo largo de la documentación se usan muchas dependencias, por lo que se podría
+usar un apartado de “Referencias” o similar para listar todas las dependencias y un enlace a su historial de versiones.
+Un ejemplo sería la versión del SDK de
+[AGCP](https://developer.huawei.com/consumer/en/doc/AppGallery-connect-Guides/agc-sdk-changenotes-0000001058732550#section1850181717218)
+y [Gradle](https://gradle.org/releases/).
+
+<Warning>No he continuado con la configuración de Huawei.</Warning>
 
 ## Inicialización de la librería
 ## Inicio aplazado de librería
