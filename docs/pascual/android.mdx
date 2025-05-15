@@ -2,7 +2,6 @@
 title: Integración con Android
 description: A continuación se muestra cómo se ha organizado la generación del análisis.
 ---
-
 ## Configuración básica
 Respecto a las empresas del sector, he encontrado una que tiene un asistente de integración. En concreto [AppsFlyer](https://dj.dev.appsflyer.com/).
 Creo que EMMA podría hacer algo similar para facilitar todo el proceso de integración a los desarrolladores.
@@ -166,9 +165,31 @@ y [Gradle](https://gradle.org/releases/).
 
 <Warning>No he continuado con la configuración de Huawei.</Warning>
 
-## Inicialización de la librería
-## Inicio aplazado de librería
-## Privacidad
+### Inicialización de la librería
+En este [punto](https://developer.emma.io/es/android/integracion-sdk#inicializar-la-librer%C3%ADa), no hay ninguna explicación de por qué se proporciona directamente el código de la clase Application.
+Es decir, si comparamos con la documentación de [AppsFlyer](https://support.appsflyer.com/hc/es/articles/207032066-Gu%C3%ADa-b%C3%A1sica-de-integraci%C3%B3n-del-SDK#select-in-what-class-to-start-the-sdk), se explica que el SDK se puede iniciar desde la clase
+Application (para un inicio inmediato) o desde la clase Activity (para un inicio aplazado), así como los motivos. En el
+apartado de [inicio aplazado del SDK](https://developer.emma.io/es/android/integracion-sdk#aplazar-el-inicio-del-sdk-opcional), no se explica tampoco.
+
+Respecto al inicio aplazado, en este [punto](https://developer.emma.io/es/android/integracion-sdk#aplazar-el-inicio-del-sdk-opcional),
+no se explica la razón por la cual se debe de aplazar el inicio del SDK. Si lo comparamos con la documentación de
+[AppsFlyer](https://support.appsflyer.com/hc/es/articles/207032066-Gu%C3%ADa-b%C3%A1sica-de-integraci%C3%B3n-del-SDK#where-to-start-the-sdk),
+en su documentación sí tienen un pequeño párrafo en el que explican la razón por la que se tendría que aplazar el inicio,
+que es por políticas de privacidad.
+
+### Privacidad
+En comparación con otras fuentes de documentación
+([estrategia de preservación de la privacidad](https://support.appsflyer.com/hc/es/articles/207032066-Gu%C3%ADa-b%C3%A1sica-de-integraci%C3%B3n-del-SDK#select-the-optoutin-scenario::ae4c6e25)
+y [métodos de preservación de privacidad](https://support.appsflyer.com/hc/es/articles/360001422989-M%C3%A9todos-de-preservaci%C3%B3n-de-la-privacidad-en-el-SDK),
+la integración en Android no tiene un apartado de privacidad dedicado. El apartado que más se le asemeja es el de
+[Manifiesto de la Privacidad](https://developer.emma.io/es/ios/privacy-manifest), pero tiene el icono de Apple y su
+contenido está mezclado con varias plataformas (entre las cuales no encuentro Android).
+
+![diagrama_uml](/pascual/images/uml.png)
+
+<Image src="/pascual/images/uml.png" alt="Pretty picture" width="100" height="100" />
+
+
 ## Powlinks
 ## Notificaciones push
 ### Configuración de Firebase
