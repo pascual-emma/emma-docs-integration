@@ -2,7 +2,6 @@
 title: Integración con Android
 description: A continuación se muestra cómo se ha organizado la generación del análisis.
 ---
-
 ## Configuración básica
 Respecto a las empresas del sector, he encontrado una que tiene un asistente de integración. En concreto [AppsFlyer](https://dj.dev.appsflyer.com/).
 Creo que EMMA podría hacer algo similar para facilitar todo el proceso de integración a los desarrolladores.
@@ -68,12 +67,420 @@ la Privacidad en Línea para Niños (COPPA) como sí se hace en la documentació
 o [AppsFlyer](https://dev.appsflyer.com/hc/docs/install-android-sdk#the-ad_id-permission).
 
 ### Integración de Huawei
+En cuanto a la sección de Huawei, parece que su configuración tiene varios pasos más que otros proveedores. Por la
+disposición de la documentación, me ha costado identificar qué partes son de Huawei y cuáles son genéricas para Android.
+Sobre todo las primeras veces que consulté la documentación. Quizás estaría bien separar la implementación de Huawei en
+una página a parte (donde se explique toda la implementación desde cero) o bien poner un bloque de texto (de un color
+diferente al fondo de la documentación) desplegable.
 
-## Inicialización de la librería
-## Inicio aplazado de librería
-## Privacidad
+También se usan direcciones URL con protocolo HTTP que Android Studio las reconoce como inseguras. Ante esto tenemos dos
+opciones, seguir usando la URL insegura o usar URL HTTPS. A continuación, se muestra un ejemplo explicativo con las líneas
+necesarias.
+
+<Card title="Configuración de conexión HTTP y HTTPS">
+Se debe incluir una instrucción específica para permitir a Gradle la conexión con repositorios inseguros. Es útil para
+repositorios que no dispongan de conexión HTTP. En la documentación no se menciona nada de esta configuración y da error
+al construir el proyecto.
+```kotlin title="build.gradle (:proyect)"
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri("http://developer.huawei.com/repo/")
+            isAllowInsecureProtocol = true
+        }
+    }
+}
+```
+Se modifica la URL para que sea HTTPS, evita usar configuraciones como las del caso anterior.
+```kotlin title="build.gradle (:proyect)"
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://developer.huawei.com/repo/")
+    }
+}
+```
+</Card>
+En el bloque de código, no se especifica qué fichero build es donde van las dependencias y no se usan versiones de catálogo,
+por lo que sugiero cambiarlo a algo como así:
+
+Se puede observar que no se incluye el bloque allprojects{}. Este bloque ya no se usa, así que lo he eliminado.
+
+```kotlin title="build.gradle (:project)"
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://developer.huawei.com/repo/")
+    }
+    dependencies {
+        classpath(libs.gradle)
+        classpath(libs.agcp)
+    }
+}
+```
+Importante poner bien las versiones o, en su defecto, poner “latest version”. Con eso evitamos errores a la hora de
+construir el proyecto y que pueda creerse que se deben a otras cosas.
+```kotlin title="libs.versions.toml "
+[version]
+agcp = "1.9.1.301"
+gradle = "8.9.1"
+
+[libraries]
+agcp = { module = "com.huawei.agconnect:agcp", version.ref = "agcp" }
+gradle = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
+```
+Respecto al fichero de dependencias de la aplicación, se usa una sintaxis para aplicar el plugin, que actualmente no es
+válida. La línea indicada en la documentación tiene que ir dentro de otro bloque. Tal y como se indica a continuación.
+```kotlin title="build.gradle (:app)"
+plugins { // [!code ++]
+    id("com.huawei.agconnect") // [!code ++]
+} // [!code ++]
+
+dependencies {
+    // other dependencies // [!code --]
+    implementation 'com.huawei.hms:ads-identifier:3.4.62.300' // [!code --]
+    implementation(libs.ads.identifier) // [!code ++]
+}
+apply plugin: 'com.huawei.agconnect' // [!code --]
+
+```
+```kotlin title="libs.versions.toml "
+[versions]
+adsIdentifier = "3.4.62.300"
+
+[libraries]
+ads-identifier = { module = "com.huawei.hms:ads-identifier", version.ref = "adsIdentifier" }
+```
+
+Considero que puede ser útil mencionar o recomendar la consulta de las últimas versiones de las dependencias usadas,
+con el fin de no generar conflictos. A lo largo de la documentación se usan muchas dependencias, por lo que se podría
+usar un apartado de “Referencias” o similar para listar todas las dependencias y un enlace a su historial de versiones.
+Un ejemplo sería la versión del SDK de
+[AGCP](https://developer.huawei.com/consumer/en/doc/AppGallery-connect-Guides/agc-sdk-changenotes-0000001058732550#section1850181717218)
+y [Gradle](https://gradle.org/releases/).
+
+<Warning>No he continuado con la configuración de Huawei.</Warning>
+
+### Inicialización de la librería
+En este [punto](https://developer.emma.io/es/android/integracion-sdk#inicializar-la-librer%C3%ADa), no hay ninguna explicación de por qué se proporciona directamente el código de la clase Application.
+Es decir, si comparamos con la documentación de [AppsFlyer](https://support.appsflyer.com/hc/es/articles/207032066-Gu%C3%ADa-b%C3%A1sica-de-integraci%C3%B3n-del-SDK#select-in-what-class-to-start-the-sdk), se explica que el SDK se puede iniciar desde la clase
+Application (para un inicio inmediato) o desde la clase Activity (para un inicio aplazado), así como los motivos. En el
+apartado de [inicio aplazado del SDK](https://developer.emma.io/es/android/integracion-sdk#aplazar-el-inicio-del-sdk-opcional), no se explica tampoco.
+
+Respecto al inicio aplazado, en este [punto](https://developer.emma.io/es/android/integracion-sdk#aplazar-el-inicio-del-sdk-opcional),
+no se explica la razón por la cual se debe de aplazar el inicio del SDK. Si lo comparamos con la documentación de
+[AppsFlyer](https://support.appsflyer.com/hc/es/articles/207032066-Gu%C3%ADa-b%C3%A1sica-de-integraci%C3%B3n-del-SDK#where-to-start-the-sdk),
+en su documentación sí tienen un pequeño párrafo en el que explican la razón por la que se tendría que aplazar el inicio,
+que es por políticas de privacidad.
+
+### Privacidad
+En comparación con otras fuentes de documentación
+([estrategia de preservación de la privacidad](https://support.appsflyer.com/hc/es/articles/207032066-Gu%C3%ADa-b%C3%A1sica-de-integraci%C3%B3n-del-SDK#select-the-optoutin-scenario::ae4c6e25)
+y [métodos de preservación de privacidad](https://support.appsflyer.com/hc/es/articles/360001422989-M%C3%A9todos-de-preservaci%C3%B3n-de-la-privacidad-en-el-SDK),
+la integración en Android no tiene un apartado de privacidad dedicado. El apartado que más se le asemeja es el de
+[Manifiesto de la Privacidad](https://developer.emma.io/es/ios/privacy-manifest), pero tiene el icono de Apple y su
+contenido está mezclado con varias plataformas (entre las cuales no encuentro Android).
+
 ## Powlinks
-## Notificaciones push
+A la hora de configurar los enlaces en la plataforma, la explicación de los fingerprints tiene un enlace “Saber más”.
+Ese enlace te lleva a la documentación de la plataforma, pero no a un apartado en concreto. En cuanto a la implementación,
+no se ha podido testear la funcionalidad al completo porque la aplicación no la he subido a Google Play. Sí he podido
+generar tanto la campaña como la fuente de la campaña y, dentro del emulador, ver cómo aparece una página de Google
+Play con el nombre de mi aplicación. Al pulsar, me redirige a la URL que tengo configurada en la campaña.
+
+<CardGroup>
+    <Card><Image zoom caption="Campaña creada" src="/pascual/images/powlink1.png" /></Card>
+    <Card><Image zoom caption="Redirección de la URL a WhatsApp" src="/pascual/images/powlink2.png" /></Card>
+</CardGroup>
+
+Dentro de la campaña, he creado dos fuentes de medios. La configuración de dichas fuentes se muestra en las siguientes
+capturas:
+<CardGroup>
+    <Card><Image zoom src="/pascual/images/fuente1.png" /></Card>
+    <Card><Image zoom src="/pascual/images/fuente2.png" /></Card>
+    <Card><Image zoom src="/pascual/images/fuente3.png" /></Card>
+    <Card><Image zoom src="/pascual/images/fuente4.png" /></Card>
+</CardGroup>
+
+Lo que ocurre es que, al no tener mi app subida, los enlaces no funcionan correctamente. Dentro de la campaña tengo la
+URL de WhatsApp, pero en cada fuente de medios tengo configurado un enlace a la pantalla de los Cupones dentro de mi
+app. No he encontrado otra forma de probar el funcionamiento. Me ha costado un poco entender cómo configurar todo el
+“ecosistema” de los powlinks para hacer una prueba rápida.
+
+Respecto a la integración, como el bloque de código del fichero XML es tan grade, yo especificaría qué líneas han de
+modificarse y qué valor nuevo deberían tomar. Esta cuestión se puede hacer segmentando el fichero en bloques de código
+más pequeños o poniendo el fichero entero y resaltar las líneas a modificar (junto con una pequeña explicación). Un ejemplo
+sería el siguiente:
+
+```xml title="AndroidManifest.xml"
+<activity
+     android:name="io.emma.android.activities.EMMADeepLinkActivity"
+     android:noHistory="true"
+     android:exported="true"
+     android:theme="@android:style/Theme.NoDisplay">
+
+     <intent-filter>
+          <action android:name="android.intent.action.VIEW"/>
+          <category android:name="android.intent.category.DEFAULT"/>
+          <category android:name="android.intent.category.BROWSABLE"/>
+
+          <data android:scheme="{YOUR_DEEPLINK_SCHEME}"/> // [!code highlight]
+     </intent-filter>
+
+     <intent-filter android:autoVerify="true">
+         <action android:name="android.intent.action.VIEW"/>
+         <category android:name="android.intent.category.DEFAULT"/>
+         <category android:name="android.intent.category.BROWSABLE"/>
+
+          <data
+             android:host="subdomain.powlink.io" // [!code highlight]
+             android:scheme="https"/>
+
+          <data
+             android:host="shortsubdomain.pwlnk.io" // [!code highlight]
+             android:scheme="https"/>
+
+     </intent-filter>
+
+     <!-- Metadatos que indican la actividad encargada de gestionar los Deeplinks -->
+     <meta-data
+         android:name="io.emma.DEEPLINK_OPEN_ACTIVITY"
+         android:value="com.your.package.CustomDeeplinkActivity"/> // [!code highlight]
+
+</activity>
+```
+Los subdominios que se resaltan deben obtenerse de aquellos que se han configurado en la
+[plataforma](https://docs.emma.io/es/adquisicion/apptracker#configuraci%C3%B3n-para-usar-powlink-y-pwlnk), manteniendo
+las partes `.powlink.io` y `pwlnk.io` sin modificar. Luego, tras modificar los subdominios
+
+
+
+
+
+
+Quedaría más claro mencionar la modificación de las siguientes líneas: El esquema de tu enlace lo sustituyes
+por `YOUR_DEEPLINK_SCHEME` en el siguiente bloque. Creo que la persona vería claramente y al momento dónde se
+insertan los cambios. Todo lo que sea visualmente rápido facilita la integración.
+
+```xml
+<activity>
+     <intent-filter>
+          <data android:scheme="{YOUR_DEEPLINK_SCHEME}"/>
+     </intent-filter>
+</activity>
+
+```
+
+### Notificaciones push
+### Rich push
+La configuración de los push enriquecidos se puede hacer de dos formas: Mediante el SDK de EMMA (usando la clase
+`EMMADeepLinkActivity` para filtrar los _deeplinks_) o mediante una clase controladora aparte. Me ha resultado un poco
+confusa la explicación de la documentación, puesto que se menciona la clase controladora auxiliar como un paso a
+realizar:
+
+> Añade la actividad a ser lanzada, en forma de `<meta-data>` dentro del tag `<application>` en `AndroidManifest.xml`.
+> Esta actividad será lanzada cuando el SDK ejecute un deeplink:
+> `<meta-data android:name="io.emma.DEEPLINK_OPEN_ACTIVITY" android:value="com.your.package.CustomDeeplinkActivity"/>`
+
+En cambio, siguiendo estos pasos, puede darse la situación en que también se configure el fichero `AndroidManifest` con
+los parámetros `scheme` y `host` y entonces ya no funciona la redirección de funcionamiento hacia la clase controladora
+que se menciona en la cita anterior. Entonces, considero que el apartado de push enriquecidos debería estructurarse de la
+siguiente forma. En las explicaciones se muestran los bloques de código corregidos de la documentación de integración.
+
+El índice debería tener los puntos: "Configuración mediante EMMA" y "Configuración personalizada". Los pasos de configuración
+de cada punto deberían ser los siguientes.
+<Steps>
+    <Step title="Introduce la configuración de filtro de enlaces profundos en el `AndroidManifest`">
+        <Warning>
+            En la [documentación](https://developer.emma.io/es/android/integracion-sdk#a%C3%B1adir-activity-para-procesar-deeplinks)
+            ya se ha introducido una actividad `EMMADeepLinkActivity` en el fichero `AndroidManifest`,
+            por lo que posiblemente, ya lo tendrás y el bloque que aparece es redundante ponerlo.
+        </Warning>
+
+        Asegurate de tener la actividad `EMMADeepLinkActivity` configurada de la siguiente forma, así como ajustar los
+        permisos.
+        ```xml title="AndroidManifest.xml"
+        <activity
+              android:name="io.emma.android.activities.EMMADeepLinkActivity"
+              android:theme="@android:style/Theme.NoDisplay"
+              android:exported="true"
+              android:launchMode="singleTask"
+              android:noHistory="true"
+              android:permission="com.example.emmaintegrationtest.PERMISSION" >
+              <intent-filter>
+                  <action android:name="android.intent.action.VIEW" />
+                  <category android:name="android.intent.category.DEFAULT" />
+                  <category android:name="android.intent.category.BROWSABLE" />
+                  <data android:scheme="emma" /> // [!code highlight]
+              </intent-filter>
+        </activity>
+        ```
+        Es posible que también tengas dentro de esa configuración el bloque `intent-filter` de los powlink, déjalo debajo
+        del `intent-filter`, de forma que tendrás dos. Como se puede ver, el esquema que vamos a usar para estos enlaces
+        es `emma`.
+    </Step>
+    <Step title="Configura los filtros de las actividades">
+        Ahora, dentro del fichero `AndroidManifest` hay que insertar los bloques `<intent-filter>` para que se pueda
+        reconocer los enlaces. Un ejemplo sería el siguiente:
+        ```xml title="AndroidManifest.xml"
+        <activity
+            android:name=".PowlinkActivity"
+            android:exported="true"
+            android:permission="com.example.emmaintegrationtest.PERMISSION">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="powlinks"
+                    android:scheme="emma" />
+            </intent-filter>
+        </activity>
+        ```
+        Ahora, cuando la aplicación recibe una notificación push y el usuario pulsa en dicha notificación, se podrá redireccionar
+        directamente a la actividad `PowlinkActiviy`. La cual es una pantalla de ejemplo de la app.
+    </Step>
+    <Step title="Configuración y lanzamiento de la notificación push">
+        Ahora ya puedes lanzar la notificación push desde la plataforma. Asegurate de configurar la casilla "Rich push URL"
+        con el valor `emma://cupones` en el segundo paso ("2. Contenido") de configuración de notificaciones push.
+    </Step>
+</Steps>
+
+A continuación, para configurar las notificaciones push enriquecidas mediante una clase auxiliar, sigue los siguientes
+pasos.
+
+<Steps>
+    <Step title="Elimina los filtros de las actividades a mostrar">
+        Como ahora vamos a usar una clase diferente a `EMMADeepLinkActivity` para redirecionar los enlaces, ya no necesitamos
+        declarar los filtros en las actividades. De esta forma, elimina aquellos bloques `intent-filter` en las actividades
+        que quieras mostrar. Se pueden quedar, dichas actividades, de la siguiente forma (como ejemplo):
+        ```xml title="AndroidManifest.xml"
+        <activity
+            android:name=".ui.notification.CouponsActivity"
+            android:exported="true"
+            android:permission="com.example.emmaintegrationtest.PERMISSION">
+        </activity>
+        ```
+        La actividad `CouponsActivity` es una pantalla de ejemplo que se usa en mi app.
+    </Step>
+    <Step title="Declara la clase auxiliar en el manifiesto">
+        Como se menciona en la documentación, tienes que declarar en el manifiesto que ahora vas a usar una clase diferente
+        para usar los enlaces. Tendrás que insertar el siguiente bloque en el fichero:
+        ```xml title="AndroidManifest.xml"
+        <manifest>
+            <application>
+                <meta-data
+                    android:name="io.emma.DEEPLINK_OPEN_ACTIVITY"
+                    android:value="com.example.emmaintegrationtest.ui.navigation.DeepLinkHandler" />
+            </application>
+        </manifest>
+        ```
+        Mi clase la he puesto en el package `com.example.emmaintegrationtest.ui.navigation.` y es necesario poner la ruta
+        completa dentro de `android:value`. Si la ruta no es correcta el SDK devolverá un log de error genérico.
+        <Warning>
+            Cuando la ruta no está bien configurada en `android:value`, el SDK debería devolver algún mensaje
+            relacionado. Actualmente, muestra un mensaje de error genérico y tiendes a pensar que viene de otro sitio.
+        </Warning>
+    </Step>
+    <Step title="Creación de clase controladora">
+        A continuación, hay que crear una clase que reciba los enlaces y redireccione al usuario a la actividad correcta.
+        Es un concepto similar al de una API. La clase deberá ser una actividad aunque no muestre un UI como tal. Entonces,
+        la clase controladora es la siguiente:
+        ```kotlin title="DeepLinkHandler.kt"
+        class DeepLinkHandler : AppCompatActivity() {
+        }
+        ```
+        La clase necesitará, como se menciona en la documentación, declarar el meétodo `override fun onNewIntent(intent: Intent)`
+        así como invocar a `EMMA.getInstance().checkForRichPushUrl()` en el método `fun onCreate(savedInstanceState: Bundle?)`. Después la lógica de
+        redirección se muestra en el método `fun handle(uri: Uri?)` y `fun checkSchema(uri: Uri?)`, aunque se puede introducir también
+        dentro de `fun onCreate(savedInstanceState: Bundle?)`. Por lo tanto, la clase quedaría de la siguiente forma (mostrando
+        las líneas antiguas que se muestran en la documentación y cambiándolas por las corregidas).
+
+        ```kotlin title="DeepLinkHandler.kt"
+        package com.example.emmaintegrationtest.ui.navigation
+
+        import android.content.Intent
+        import android.net.Uri
+        import android.os.Bundle
+        import androidx.appcompat.app.AppCompatActivity
+        import com.example.emmaintegrationtest.PowlinkActivity
+        import com.example.emmaintegrationtest.ui.notification.CouponsActivity
+        import com.example.emmaintegrationtest.ui.other.RichPushErrorActivity
+        import io.emma.android.EMMA
+        import io.emma.android.utils.EMMALog
+
+        class DeepLinkHandler : AppCompatActivity() {
+            private val SCHEME = "emma"
+            private val COUPONS_ACTIVITY_HOST_VALUE = "cupones"
+            private val POWLINKS_ACTIVITY_HOST_VALUE = "powlinks"
+
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+                EMMA.getInstance().checkForRichPush()  // [!code --]
+                EMMA.getInstance().checkForRichPushUrl() // [!code ++]
+
+                if (intent.data != null ) {
+                    // Show basic information about the recieved deeplink
+                    EMMALog.d("schema:${intent.data?.scheme}, host:${intent.data?.host}")
+
+                    // Check schema value
+                    checkSchema(intent.data)
+
+                    // Handle the recieved deeplink
+                    handle(intent.data)
+                }
+            }
+
+            /**
+             * Dispatch the activity depending of the recieved 'host' value, start the activity and finish it.
+             */
+            private fun handle(uri: Uri?) {
+
+                val intent = when (uri?.host) {
+                    COUPONS_ACTIVITY_HOST_VALUE -> Intent(this, CouponsActivity::class.java)
+                    POWLINKS_ACTIVITY_HOST_VALUE -> Intent(this, PowlinkActivity::class.java)
+                    else -> Intent(this, RichPushErrorActivity::class.java)
+                }
+
+                startActivity(intent)
+                finish()
+            }
+
+            /**
+             * Checks if scheme value inside the intent data equals to the configured scheme value. This
+             * mentioned value is established in [SCHEME].
+             */
+            private fun checkSchema(uri: Uri?) {
+                if (!uri?.scheme.equals(SCHEME)) {
+                    EMMALog.w("El valor 'scheme' recibido no coincide con el configurado en la app.")
+                    finish()
+                }
+            }
+
+            /**
+             * The deeplink inside the rich push is handled after not-null check.
+             * {@inheritDoc}
+             *
+             * @see handle
+             */
+            override fun onNewIntent(intent: Intent?) { // [!code --]
+            override fun onNewIntent(intent: Intent) { // [!code ++]
+                super.onNewIntent(intent);
+                EMMA.getInstance().onNewNotification(intent, true);
+            }
+        }
+        ```
+    </Step>
+    <Step title="Lanzamiento desde EMMA">
+        Ahora, ya puedes lanzar la notificación push desde la platafora de la misma forma que en la configuración por
+        defecto.
+    </Step>
+</Steps>
+
 ### Configuración de Firebase
 ## Integración behavior
 ### Registro e inicio de sesión de usuarios
