@@ -257,11 +257,6 @@ Los subdominios que se resaltan deben obtenerse de aquellos que se han configura
 [plataforma](https://docs.emma.io/es/adquisicion/apptracker#configuraci%C3%B3n-para-usar-powlink-y-pwlnk), manteniendo
 las partes `.powlink.io` y `pwlnk.io` sin modificar. Luego, tras modificar los subdominios
 
-
-
-
-
-
 Quedaría más claro mencionar la modificación de las siguientes líneas: El esquema de tu enlace lo sustituyes
 por `YOUR_DEEPLINK_SCHEME` en el siguiente bloque. Creo que la persona vería claramente y al momento dónde se
 insertan los cambios. Todo lo que sea visualmente rápido facilita la integración.
@@ -272,10 +267,80 @@ insertan los cambios. Todo lo que sea visualmente rápido facilita la integraci�
           <data android:scheme="{YOUR_DEEPLINK_SCHEME}"/>
      </intent-filter>
 </activity>
-
 ```
 
+Para la línea de los metadatos en los rich push, se ha explicado más adelante en un apartado dedicado. Se mencionan los
+rich push dentro de este apartado pero creo que no debería mencionarse ni configurarse nada hasta el propio apartado
+de rich push.
+
 ### Notificaciones push
+Cuando se muestran las líneas de código a introducir, se puede resumir o agrupar por fichero y reducir la cantidad de
+bloques. También, cuando se menciona que necesita el fichero `google-services.json`, y justo antes de los bloques de
+código de server key legacy, convendría introducir un bloque de código con las dependencias que Firebase menciona cuando
+hacemos la configuración.
+```kotlin
+import io.emma.android.model.EMMAPushOptions
+import androidx.core.content.ContextCompat
+
+class ExampleApplication : Application() {
+}
+```
+
+A la hora de configurar las notificaciones push desde Firebase, nos muestra esta configuración:
+```kotlin
+class MainActivity : AppCompatActivity(){
+    EMMA.getInstance().requestNotificationsPermission(); // [!code --]
+	EMMA.getInstance().requestNotificationPermission() // [!code ++]
+}
+```
+
+Respecto a añadir el método `override fun onNewIntent(intent: Intent)`, no lo he añadido y me han funcionado bien las
+notificaciones push. Si bien es cierto, que para abrir los enlaces profundos sí lo he tenido que añadir. La sintaxis del
+método quedaría así:
+```kotlin
+override fun onNewIntent(intent: Intent) {
+	super.onNewIntent(intent)
+    EMMA.getInstance().onNewNotification(this, intent, true); // [!code --]
+    EMMA.getInstance().onNewNotification(intent, true) // [!code ++]
+}
+```
+
+#### Configuración de Firebase
+Tras descargarme el fichero JSON, los
+[enlaces](https://docs.emma.io/es/comunicacion/mensajes-out-app/push-notifications#c%C3%B3mo-probar-las-notificaciones-push)
+para probar las notificaciones PUSH no direccionan bien al epígrafe
+concreto que menciona cada texto. Todos llevan al mismo punto. Sobre el uso de un servicio personalizado para las
+notificaciones, se usa un bloque de código pero no se menciona ni explica nada más. También falta mencionar las
+importaciones y poner el punto antes de las notificaciones rich push.
+```kotlin
+import com.google.firebase.messaging.RemoteMessage
+import io.emma.android.enums.EMMAPushType
+import io.emma.android.push.EMMAPushNotificationsManager
+
+class FirebaseMensajes : FirebaseMessagingService() {
+
+    private fun isPushFromEMMA(remoteMessage: RemoteMessage): Boolean {
+        return remoteMessage.data["eMMa"] == "1"
+    }
+
+    override fun onMessageReceived(remoteMessage: RemoteMessage) {
+        if (isPushFromEMMA(remoteMessage)) {
+         	EMMAPushNotificationsManager.handleNotification(applicationContext, remoteMessage.data)
+        }
+    }
+
+    override fun onNewToken(token: String) {
+        EMMAPushNotificationsManager.refreshToken(applicationContext, token, EMMAPushType.FCM)
+    }
+}
+```
+Finalmente, sobre el funcionamiento de los botones con acciones, no he encontrado ningún problema. A pesar de esto,
+sí he visto una funcionalidad del uso de botones que no se puede modificar. Cuando se usan botones en las notificaciones
+push, ésta desaparece, no se mantiene en la pantalla para permitir que se pulsen otros botones. Tras revisar en la
+configuración de mensajes push de EMMA, no he encontrado ninguna configuración al respecto. Solo he encontrado soluciones
+a nivel de código en el lado del cliente (IDE).
+
+
 ### Rich push
 La configuración de los push enriquecidos se puede hacer de dos formas: Mediante el SDK de EMMA (usando la clase
 `EMMADeepLinkActivity` para filtrar los _deeplinks_) o mediante una clase controladora aparte. Me ha resultado un poco
@@ -481,18 +546,330 @@ pasos.
     </Step>
 </Steps>
 
-### Configuración de Firebase
-## Integración behavior
-### Registro e inicio de sesión de usuarios
-### Transacciones
-### Eventos personalizados
-## Perfil de usuario
-### Atribución
-## Opciones avanzadas
-### ProGuard
-## Integración In-App Messaging
-### NativeAds
-### StartViews, Adball, Banner y StripView
-### Cupones
-## Plugins personalizados
-## Revisión de enlaces caídos o rotos
+### Integración behavior
+#### Registro e inicio de sesión de usuarios
+No he encontrado información sobre cómo se contabilizan los registros de los usuarios en EMMA. Ni en la documentación de
+integración ni en la de funcionamiento de la plataforma. A la hora de hacer pruebas con la funcionalidad de registro,
+he encontrado que el identificador del usuario se puede modificar usando los métodos de registro e inicio de sesión.
+Muestro, a continuación, los pasos que he seguido:
+
+1. Creo los métodos de inicio de sesión y registro. Para identificarlos, en registro usaré mi nombre y en inicio de
+sesión el de mi compañero Matías. He creado dos botones, uno representa el registro y otro el inicio de sesión. Cuando
+se pulsan, se invoca al las funcionalidades mencionadas. Se pretende mostrar cómo, al invocar a las diferentes
+funcionalidades, el identificador del usuario cambia en la plataforma.
+```kotlin
+// Se omiten importaciones
+
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        // Identificadores de botones
+        val botonRegistro = findViewById<Button>(R.id.button_registro)
+        val botonLogin = findViewById<Button>(R.id.button_login)
+
+        // Acción de registro
+        botonRegistro.setOnClickListener {
+            EMMA.getInstance().registerUser("pascual", "pascual@ext.arkana.io")
+        }
+
+        // Acción de login
+        botonLogin.setOnClickListener {
+            EMMA.getInstance().loginUser("matias", "matias@ext.arkana.io")
+        }
+    }
+}
+```
+Tras pulsar en el botón de registrar, la plataforma identifica el registro. Si voy al apartado de "Gente" en EMMA,
+la plataforma muestra un registro con
+| ID de cliente | ID de dispositivo |
+| --- | --- |
+| pascual | aaed(...) |
+
+Ahora, al pulsar en el botón de inicio de sesión y usar el mismo filtro, el identificador del cliente ha cambiado. Pone
+"matias" en lugar de "pascual". Se observa que no hay persistencia en el identificador. Si probamos a filtrar usando
+otros parámetros, como el sistema operativo, vemos que el resultado es el mismo.  Además, respecto al inicio de sesión
+automático, se hace mención al uso del método `EMMA.loginDefault()` pero no lo encuentro dentro de `EMMA.getInstance().
+
+#### Transacciones
+
+En la documentación se mencionan los métodos necesarios para cada tipo de transacción, en cambio, no se ofrece
+documentación sobre los parámetros que usan dichos métodos. Tienes que ir usando el IDE para que te muestre los parámetros.
+En cambio, creo que a veces no es suficiente para comprender el funcionamiento del método. Además, al pulsar en
+"Download documentation", salta el error `Task 'ijDownloadSources1942b537-ffc' not found in project ':app'`.
+
+Al realizar una transacción no se obtiene retroalimentación inmediata que permita saber si la operación se ha ejecutado
+correctamente. Únicamente, podemos revisarlo en la plataforma EMMA, pero los datos tardan tiempo en reflejarse.
+
+#### Eventos personalizados
+No he encontrado dificultad en la integración de eventos personalizados.
+
+### Perfil de usuario
+A la hora de recibir el identificador de usuario, incluso implementando la interfaz `EMMAUserInfoInterface`, el IDE nos
+devuelve el valor `kotlin.Unit`. No nos proporciona el valor del usuario. La configuración del idioma con la
+línea `EMMA.getInstance().setUserLanguage()` no está disponible (quizás con versiones posteriores lo estará). Finalmente,
+a las sintaxis de las implementaciones les falta el paréntesis, de otra forma saltaría error. También hay algunos métodos
+cuya sintaxis no es correcta o provoca errores en el IDE, por ejemplo:
+```kotlin
+import org.json.JSONObject
+
+class MainActivity : AppCompatActivity(), EMMAUserInfoInterface {
+    override fun OnGetUserInfo(userInfo: JSONObject?) {
+      userInfo?.let { // [code --]
+      userInfo?.let { info: JSONObject -> // [code --]
+        // Do something with userInfo
+      }
+    }
+
+    override fun OnGetUserID(id: Int) {
+        // Not implemented
+    }
+}
+```
+Respecto a la obtención de la información de usuario con `getUserID()`, el método descrito en la documentación
+devuelve `kotlin.Unit`, no el identificador de usuario.
+
+#### Atribución
+No se he encontrado dificultad a la hora de implementar el método de atribución. Se pone un enlace para conocer los
+campos de atribución y poder trabajar con ellos en el código. A pesar de eso, hay poca información sobre la atribución.
+En la documentación de integración no se menciona nada sobre cómo probarlo.
+
+El [enlace](https://developer.emma.io/es/reference/user-info-fields#descripci%C3%B3n-de-los-campos-de-atribuci%C3%B3n-del-usuario) que menciona la documentación, parece que no es accesible desde el índice. Me ha faltado algo de contexto sobre
+las atribuciones, lo que he encontrado al respecto es en la documentación de funcionamiento de EMMA, donde se mencionan
+las campañas de atribución. En cambio, no he encontrado nada sobre qué información puedo recibir al implementar el código
+y qué configuración es necesaria en EMMA para hacerlo funcionar (si tengo que crear una campaña de atribución, cómo tengo
+que crearla, una vez creada cómo la vinculo, etc.).
+
+### Opciones avanzadas
+#### ProGuard
+He podido importar la configuración sin problemas. No han saltado errores ni he tenido que modificar nada. A pesar de eso,
+sí que veo necesario algún bloque de información donde se avise cómo activar el Proguard. Como la activación del siguiente comando:
+```kotlin title="build.gradle (:app)"
+android {
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+        }
+    }
+}
+```
+O bien, un pequeño bloque de información donde se recuerden los requisitos necesarios para usarlo.
+
+### Integración In-App Messaging
+#### NativeAds
+Comienzo con el primer bloque de código donde se muestra la clase `NativeAdsActivity`. A primera vista, intuyo que todo el
+código de la clase hay que copiarlo y pegarlo en nuestro proyecto y que se puede utilizar sin modificaciones. En cambio,
+no ha sido posible y he tenido que realizar unas modificaciones que, más adelante, describiré.
+
+La clase mostrada implementa varias interfaces y necesita incluir sus métodos, en cambio, no hay información de qué métodos
+son y para qué se utilizan. Quizás sería mejor introducir un bloque de información donde se mencionen qué métodos hacen
+falta, por qué y una breve explicación de los mismos. Esto se puede sustituir por un bloque de comentarios dentro del
+código que, al implementar, también hereden los comentarios y se pueda tener una breve explicación. Solo en aquellos
+métodos cuya signatura no explique su funcionamiento.
+
+En cuanto al tipo de actividad de la clase `BaseActivity` el IDE me muestra un error y he tenido que cambiarla por
+`AppCompatActivity`. Más tarde he tenido que eliminar ese tipo de actividad, e incluir un callback en el constructor.
+Es la forma que he encontrado de hacer funcionar la clase cambiando la menor cantidad de cosas posibles. En mi clase
+MainActivity`, he creado un método que infla el anuncio y recibe los datos del anuncio. Tal que así:
+
+He creado un botón que, al pulsar, se activa todo el funcionamiento. Para poder ver el anuncio, he creado un contenedor
+en la vista principal. También he creado una vista para el anuncio. Lo que hace mi programa es recibir la información del
+anuncio dentro de la vista del anuncio. Luego, la vista del anuncio la introduce dentro del contenedor de la vista principal.
+
+```kotlin
+// Se omiten importaciones
+
+class MainActivity : AppCompatActivity(), EMMAUserInfoInterface {
+
+	private lateinit var botonNativeAds : Button
+
+    	override fun onCreate(savedInstanceState: Bundle?) {
+        	super.onCreate(savedInstanceState)
+        	setContentView(R.layout.activity_main)
+        	botonNativeAds = findViewById(R.id.button_mostrar_nativead)
+        	nativeAdEvent()
+    	}
+
+	/**
+     * Evento que lanza el nativead a la pantalla
+     */
+	private fun nativeAdEvent() {
+        botonNativeAds.setOnClickListener {
+            val recievedAd: (EMMANativeAd) -> Unit = extractAndInflate()
+            val nativeAdHandler = NativeAdHandler(recievedAd)
+            nativeAdHandler.getNativeAd("plantilla-nativead-android")
+        }
+	}
+
+	/**
+     * Infla la vista con la información del anuncio y actualiza la pantalla.
+     */
+	private fun extractAndInflate(): (EMMANativeAd) -> Unit {
+        val recievedAd: (EMMANativeAd) -> Unit = { nativeAd ->
+
+            // Inflar vista
+            val inflater = LayoutInflater.from(this)
+            val adView = inflater.inflate(R.layout.activity_native_ads, null, false)
+
+            // Guardar datos del anuncio
+            val title = nativeAd.nativeAdContent["Title"]?.fieldValue
+            val body = nativeAd.nativeAdContent["Body"]?.fieldValue
+
+            // Meter datos dentro los campos
+            adView.findViewById<TextView>(R.id.textview_titulo).text = title
+            adView.findViewById<TextView>(R.id.textview_cuerpo).text = body
+
+            // Impresión a EMMA
+            EMMA.getInstance().sendInAppImpression(CommunicationTypes.NATIVE_AD, nativeAd)
+
+            // Meter vista en el contenedor
+            val container = findViewById<RelativeLayout>(R.id.nativead_container)
+            container.removeAllViews()  // Limpiar el contenedor
+            container.addView(adView)  // Añadir el nuevo anuncio
+        }
+
+        return recievedAd
+    }
+}
+```
+```kotlin
+package com.example.emmaintegrationtest.nativeads
+
+import io.emma.android.EMMA
+import io.emma.android.enums.CommunicationTypes
+import io.emma.android.interfaces.EMMABatchNativeAdInterface
+import io.emma.android.interfaces.EMMAInAppMessageInterface
+import io.emma.android.interfaces.EMMANativeAdInterface
+import io.emma.android.model.EMMACampaign
+import io.emma.android.model.EMMANativeAd
+import io.emma.android.model.EMMANativeAdRequest
+
+class NativeAdHandler(
+    private val onAdReceived: (EMMANativeAd) -> Unit
+) : EMMAInAppMessageInterface, EMMABatchNativeAdInterface, EMMANativeAdInterface {
+
+
+    override fun onReceived(nativeAd: EMMANativeAd) {
+        onAdReceived(nativeAd)
+    }
+
+    fun getNativeAd(templateId: String) {
+        val nativeAdRequest = EMMANativeAdRequest()
+        nativeAdRequest.templateId = templateId
+        EMMA.getInstance().getInAppMessage(nativeAdRequest, this)
+    }
+
+    fun getNativeAdBatch(templateId: String) {
+        val nativeAdRequest = EMMANativeAdRequest()
+        nativeAdRequest.templateId = templateId
+        nativeAdRequest.isBatch = true
+        EMMA.getInstance().getInAppMessage(nativeAdRequest, this)
+    }
+
+    override fun onBatchReceived(nativeAds: MutableList<EMMANativeAd>) {
+        nativeAds.forEach { nativeAd ->
+            nativeAd.tag?.let { tag ->
+                println("Received batch nativead with tag: $tag")
+            }
+        }
+    }
+
+    fun sendNativeAdClick(nativeAd: EMMANativeAd) {
+        EMMA.getInstance().sendInAppClick(CommunicationTypes.NATIVE_AD, nativeAd)
+    }
+
+    fun openNativeAd(nativeAd: EMMANativeAd) { EMMA.getInstance().openNativeAd(nativeAd) }
+
+    override fun onShown(p0: EMMACampaign?) {
+        // not implemented
+    }
+
+    override fun onHide(p0: EMMACampaign?) {
+        // not implemented
+    }
+
+    override fun onClose(p0: EMMACampaign?) {
+        // not implemented
+    }
+}
+```
+Quizás quedaría más claro recordando al usuario que puede hacer una prueba para estos anuncios activando la depuración tal que:
+```kotlin
+import io.emma.android.EMMA
+
+class MiAplicacion: Application() {
+        override fun onCreate() {
+            EMMA.getInstance().setDebuggerOutput(true)
+    }
+}
+```
+De esta forma, dentro de Logcat, se puede ver el contenido sin necesidad de inflar la vista. Para crear la vista he
+tenido que modificar la clase y no me ha funcionado la que se muestra en la documentación. Respecto al párrafo
+“Obtendremos toda la información del NativeAd disponible para el usuario referente al templateId, según las condiciones
+que se hayan configurado en la plataforma de EMMA.”, no me ha quedado claro qué identificador tengo que usar. Cuando se
+menciona templateId, en realidad se hace alusión al identificador de la plantilla que se ha usado para crear el mensaje
+NativeAd. Por esto, creo que sería más sencillo para el usuario crear un pequeño bloque de texto donde se recuerde qué
+plantilla necesita el NativeAd, qué identificador necesitamos y dónde se introduce. Menciono lo de dónde se introduce
+porque no se menciona explícitamente a qué método hay que invocar para hacerlo funcionar. Sí se mencionan los métodos
+`getNativeAd(templateId: String)` y `getNativeAdBatch(templateId: String), pero no se dice explícitamente que son esos
+métodos los que hay que invocar y cómo hay que hacerlo.
+
+El método `onBatchReceived`() se activa cuando tenemos varios native ads, pero si no se incluye una etiqueta de
+identificación, el método no hace nada. Quizás vendría bien incluir algo de información al respecto. También sería útil
+tener información sobre el comportamiento del carrousel de native ads. Para la apertura o el seguimiento de clicks, al
+método `sendInAppClick()` le falta un parámetro por mencionar y explicar, que es la campaña.
+
+
+#### StartViews, Adball, Banner y StripView
+Para los Startviews, no se explica su funcionamiento. Si tengo dos campañas activas de Startviews, como en el código no
+indico cual quiero mostrar, se muestra la última creada. La otra sigue activa. No se puede asignar una plantilla usando
+los métodos. Además, para los Startviews, Adball, Banner y Strip se muestra el bloque de código pero no se indica dónde
+ponerlo. Tampoco se menciona que el adball y el banner no necesitan ninguna configuración adicional, con el bloque de
+código y la configuración en EMMA ya funcionan.
+
+Todos los tipos de mensajes in-app no están enlazados a su explicación en la documentación de la plataforma.
+
+#### Cupones
+Respecto a los cupones, su integración me ha parecido confusa inicialmente. En la documentación se nos facilita una
+clase con una breve explicación de la misma y sus métodos, pero de primeras no he entendido cómo éstos interaccionan
+entre sí y cómo se sincronizan con la plataforma. Creo que sería buena idea recordar que los cupones solo muestran la
+información necesaria para canjear o descontar precios en el local físico, que no hay funcionamiento de compras y
+descuentos con los cupones. Se menciona en la documentación de la plataforma pero no se recuerda ni se enlaza ninguna
+explicación dentro de la documentación de integración.
+
+Respecto al canjeo y cancelación de cupones, no se menciona cómo funciona en relación a la plataforma ni dónde se pueden
+observar las analíticas de los cupones dentro de EMMA.
+
+No están enlazados los apartados de ambas documentaciones.
+
+### Plugins personalizados
+He encontrado la implementación de los plugins confusa. Estoy revisando el repositorio con el proyecto de ejemplo pero
+no está documentado y me está costando entender cómo implementarlo. Creo que la integración no es tan simple como heredar
+únicamente de la clase `EMMAInAppPlugin` como se menciona en la documentación. Si bien es cierto que es lo mínimo que
+necesitas para hacerlo funcionar, pero en la aplicación del ejemplo se hacen más cosas.
+
+En cuanto al plugin de ejemplo que del repositorio, se crean seis clases para el prisma a mostrar y luego, desde una
+actividad principal, se crea un native ad y se invoca al plugin. Entonces, la integración requiere una clase
+EMMAInAppPrismPlugin que herede de EMMAInAppPlugin y que implementen los métodos mencionados en la documentación.
+Luego, dentro de la clase principal, crear y configurar un EMMANativeAd y pasárselo al plugin.
+
+Creo que es necesario explicar más pasos para entender el cómo crear un plugin de forma rápida y sencilla.
+
+
+
+
+### Revisión de enlaces caídos o rotos
+
+<Card title="Dependencias">
+    - Enlace del apartado: https://developer.emma.io/es/android/integracion-sdk#dependencias
+    - Enlace caído o roto: https://docs.emma.io/es/configuracion#general-emma-key
+    - Descripción: Te lleva al apartado general de la documentación
+</Card>
+
+<Card title="Integración Notificaciones Push">
+    - Enlace del apartado: https://developer.emma.io/es/android/integracion-sdk#integraci%C3%B3n-notificaciones-push
+    - Enlace caído o roto: https://docs.emma.io/es/comunicacion/mensajes-out-app/push-notifications#habilita-fcm-android-para-las-notificaciones-push
+    - Descripción: Dentro del bloque rojo se menciona un artículo para obtener el Sender ID y Server Key. El enlace te lleva
+    al apartado general de notificaciones push y no al artículo en concreto.
+</Card>
