@@ -185,13 +185,302 @@ la integración en Android no tiene un apartado de privacidad dedicado. El apart
 [Manifiesto de la Privacidad](https://developer.emma.io/es/ios/privacy-manifest), pero tiene el icono de Apple y su
 contenido está mezclado con varias plataformas (entre las cuales no encuentro Android).
 
-![diagrama_uml](/pascual/images/uml.png)
-
-<Image src="/pascual/images/uml.png" alt="Pretty picture" width="100" height="100" />
-
-
 ## Powlinks
-## Notificaciones push
+A la hora de configurar los enlaces en la plataforma, la explicación de los fingerprints tiene un enlace “Saber más”.
+Ese enlace te lleva a la documentación de la plataforma, pero no a un apartado en concreto. En cuanto a la implementación,
+no se ha podido testear la funcionalidad al completo porque la aplicación no la he subido a Google Play. Sí he podido
+generar tanto la campaña como la fuente de la campaña y, dentro del emulador, ver cómo aparece una página de Google
+Play con el nombre de mi aplicación. Al pulsar, me redirige a la URL que tengo configurada en la campaña.
+
+<CardGroup>
+    <Card><Image zoom caption="Campaña creada" src="/pascual/images/powlink1.png" /></Card>
+    <Card><Image zoom caption="Redirección de la URL a WhatsApp" src="/pascual/images/powlink2.png" /></Card>
+</CardGroup>
+
+Dentro de la campaña, he creado dos fuentes de medios. La configuración de dichas fuentes se muestra en las siguientes
+capturas:
+<CardGroup>
+    <Card><Image zoom src="/pascual/images/fuente1.png" /></Card>
+    <Card><Image zoom src="/pascual/images/fuente2.png" /></Card>
+    <Card><Image zoom src="/pascual/images/fuente3.png" /></Card>
+    <Card><Image zoom src="/pascual/images/fuente4.png" /></Card>
+</CardGroup>
+
+Lo que ocurre es que, al no tener mi app subida, los enlaces no funcionan correctamente. Dentro de la campaña tengo la
+URL de WhatsApp, pero en cada fuente de medios tengo configurado un enlace a la pantalla de los Cupones dentro de mi
+app. No he encontrado otra forma de probar el funcionamiento. Me ha costado un poco entender cómo configurar todo el
+“ecosistema” de los powlinks para hacer una prueba rápida.
+
+Respecto a la integración, como el bloque de código del fichero XML es tan grade, yo especificaría qué líneas han de
+modificarse y qué valor nuevo deberían tomar. Esta cuestión se puede hacer segmentando el fichero en bloques de código
+más pequeños o poniendo el fichero entero y resaltar las líneas a modificar (junto con una pequeña explicación). Un ejemplo
+sería el siguiente:
+
+```xml title="AndroidManifest.xml"
+<activity
+     android:name="io.emma.android.activities.EMMADeepLinkActivity"
+     android:noHistory="true"
+     android:exported="true"
+     android:theme="@android:style/Theme.NoDisplay">
+
+     <intent-filter>
+          <action android:name="android.intent.action.VIEW"/>
+          <category android:name="android.intent.category.DEFAULT"/>
+          <category android:name="android.intent.category.BROWSABLE"/>
+
+          <data android:scheme="{YOUR_DEEPLINK_SCHEME}"/> // [!code highlight]
+     </intent-filter>
+
+     <intent-filter android:autoVerify="true">
+         <action android:name="android.intent.action.VIEW"/>
+         <category android:name="android.intent.category.DEFAULT"/>
+         <category android:name="android.intent.category.BROWSABLE"/>
+
+          <data
+             android:host="subdomain.powlink.io" // [!code highlight]
+             android:scheme="https"/>
+
+          <data
+             android:host="shortsubdomain.pwlnk.io" // [!code highlight]
+             android:scheme="https"/>
+
+     </intent-filter>
+
+     <!-- Metadatos que indican la actividad encargada de gestionar los Deeplinks -->
+     <meta-data
+         android:name="io.emma.DEEPLINK_OPEN_ACTIVITY"
+         android:value="com.your.package.CustomDeeplinkActivity"/> // [!code highlight]
+
+</activity>
+```
+Los subdominios que se resaltan deben obtenerse de aquellos que se han configurado en la
+[plataforma](https://docs.emma.io/es/adquisicion/apptracker#configuraci%C3%B3n-para-usar-powlink-y-pwlnk), manteniendo
+las partes `.powlink.io` y `pwlnk.io` sin modificar. Luego, tras modificar los subdominios
+
+
+
+
+
+
+Quedaría más claro mencionar la modificación de las siguientes líneas: El esquema de tu enlace lo sustituyes
+por `YOUR_DEEPLINK_SCHEME` en el siguiente bloque. Creo que la persona vería claramente y al momento dónde se
+insertan los cambios. Todo lo que sea visualmente rápido facilita la integración.
+
+```xml
+<activity>
+     <intent-filter>
+          <data android:scheme="{YOUR_DEEPLINK_SCHEME}"/>
+     </intent-filter>
+</activity>
+
+```
+
+### Notificaciones push
+### Rich push
+La configuración de los push enriquecidos se puede hacer de dos formas: Mediante el SDK de EMMA (usando la clase
+`EMMADeepLinkActivity` para filtrar los _deeplinks_) o mediante una clase controladora aparte. Me ha resultado un poco
+confusa la explicación de la documentación, puesto que se menciona la clase controladora auxiliar como un paso a
+realizar:
+
+> Añade la actividad a ser lanzada, en forma de `<meta-data>` dentro del tag `<application>` en `AndroidManifest.xml`.
+> Esta actividad será lanzada cuando el SDK ejecute un deeplink:
+> `<meta-data android:name="io.emma.DEEPLINK_OPEN_ACTIVITY" android:value="com.your.package.CustomDeeplinkActivity"/>`
+
+En cambio, siguiendo estos pasos, puede darse la situación en que también se configure el fichero `AndroidManifest` con
+los parámetros `scheme` y `host` y entonces ya no funciona la redirección de funcionamiento hacia la clase controladora
+que se menciona en la cita anterior. Entonces, considero que el apartado de push enriquecidos debería estructurarse de la
+siguiente forma. En las explicaciones se muestran los bloques de código corregidos de la documentación de integración.
+
+El índice debería tener los puntos: "Configuración mediante EMMA" y "Configuración personalizada". Los pasos de configuración
+de cada punto deberían ser los siguientes.
+<Steps>
+    <Step title="Introduce la configuración de filtro de enlaces profundos en el `AndroidManifest`">
+        <Warning>
+            En la [documentación](https://developer.emma.io/es/android/integracion-sdk#a%C3%B1adir-activity-para-procesar-deeplinks)
+            ya se ha introducido una actividad `EMMADeepLinkActivity` en el fichero `AndroidManifest`,
+            por lo que posiblemente, ya lo tendrás y el bloque que aparece es redundante ponerlo.
+        </Warning>
+
+        Asegurate de tener la actividad `EMMADeepLinkActivity` configurada de la siguiente forma, así como ajustar los
+        permisos.
+        ```xml title="AndroidManifest.xml"
+        <activity
+              android:name="io.emma.android.activities.EMMADeepLinkActivity"
+              android:theme="@android:style/Theme.NoDisplay"
+              android:exported="true"
+              android:launchMode="singleTask"
+              android:noHistory="true"
+              android:permission="com.example.emmaintegrationtest.PERMISSION" >
+              <intent-filter>
+                  <action android:name="android.intent.action.VIEW" />
+                  <category android:name="android.intent.category.DEFAULT" />
+                  <category android:name="android.intent.category.BROWSABLE" />
+                  <data android:scheme="emma" /> // [!code highlight]
+              </intent-filter>
+        </activity>
+        ```
+        Es posible que también tengas dentro de esa configuración el bloque `intent-filter` de los powlink, déjalo debajo
+        del `intent-filter`, de forma que tendrás dos. Como se puede ver, el esquema que vamos a usar para estos enlaces
+        es `emma`.
+    </Step>
+    <Step title="Configura los filtros de las actividades">
+        Ahora, dentro del fichero `AndroidManifest` hay que insertar los bloques `<intent-filter>` para que se pueda
+        reconocer los enlaces. Un ejemplo sería el siguiente:
+        ```xml title="AndroidManifest.xml"
+        <activity
+            android:name=".PowlinkActivity"
+            android:exported="true"
+            android:permission="com.example.emmaintegrationtest.PERMISSION">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="powlinks"
+                    android:scheme="emma" />
+            </intent-filter>
+        </activity>
+        ```
+        Ahora, cuando la aplicación recibe una notificación push y el usuario pulsa en dicha notificación, se podrá redireccionar
+        directamente a la actividad `PowlinkActiviy`. La cual es una pantalla de ejemplo de la app.
+    </Step>
+    <Step title="Configuración y lanzamiento de la notificación push">
+        Ahora ya puedes lanzar la notificación push desde la plataforma. Asegurate de configurar la casilla "Rich push URL"
+        con el valor `emma://cupones` en el segundo paso ("2. Contenido") de configuración de notificaciones push.
+    </Step>
+</Steps>
+
+A continuación, para configurar las notificaciones push enriquecidas mediante una clase auxiliar, sigue los siguientes
+pasos.
+
+<Steps>
+    <Step title="Elimina los filtros de las actividades a mostrar">
+        Como ahora vamos a usar una clase diferente a `EMMADeepLinkActivity` para redirecionar los enlaces, ya no necesitamos
+        declarar los filtros en las actividades. De esta forma, elimina aquellos bloques `intent-filter` en las actividades
+        que quieras mostrar. Se pueden quedar, dichas actividades, de la siguiente forma (como ejemplo):
+        ```xml title="AndroidManifest.xml"
+        <activity
+            android:name=".ui.notification.CouponsActivity"
+            android:exported="true"
+            android:permission="com.example.emmaintegrationtest.PERMISSION">
+        </activity>
+        ```
+        La actividad `CouponsActivity` es una pantalla de ejemplo que se usa en mi app.
+    </Step>
+    <Step title="Declara la clase auxiliar en el manifiesto">
+        Como se menciona en la documentación, tienes que declarar en el manifiesto que ahora vas a usar una clase diferente
+        para usar los enlaces. Tendrás que insertar el siguiente bloque en el fichero:
+        ```xml title="AndroidManifest.xml"
+        <manifest>
+            <application>
+                <meta-data
+                    android:name="io.emma.DEEPLINK_OPEN_ACTIVITY"
+                    android:value="com.example.emmaintegrationtest.ui.navigation.DeepLinkHandler" />
+            </application>
+        </manifest>
+        ```
+        Mi clase la he puesto en el package `com.example.emmaintegrationtest.ui.navigation.` y es necesario poner la ruta
+        completa dentro de `android:value`. Si la ruta no es correcta el SDK devolverá un log de error genérico.
+        <Warning>
+            Cuando la ruta no está bien configurada en `android:value`, el SDK debería devolver algún mensaje
+            relacionado. Actualmente, muestra un mensaje de error genérico y tiendes a pensar que viene de otro sitio.
+        </Warning>
+    </Step>
+    <Step title="Creación de clase controladora">
+        A continuación, hay que crear una clase que reciba los enlaces y redireccione al usuario a la actividad correcta.
+        Es un concepto similar al de una API. La clase deberá ser una actividad aunque no muestre un UI como tal. Entonces,
+        la clase controladora es la siguiente:
+        ```kotlin title="DeepLinkHandler.kt"
+        class DeepLinkHandler : AppCompatActivity() {
+        }
+        ```
+        La clase necesitará, como se menciona en la documentación, declarar el meétodo `override fun onNewIntent(intent: Intent)`
+        así como invocar a `EMMA.getInstance().checkForRichPushUrl()` en el método `fun onCreate(savedInstanceState: Bundle?)`. Después la lógica de
+        redirección se muestra en el método `fun handle(uri: Uri?)` y `fun checkSchema(uri: Uri?)`, aunque se puede introducir también
+        dentro de `fun onCreate(savedInstanceState: Bundle?)`. Por lo tanto, la clase quedaría de la siguiente forma (mostrando
+        las líneas antiguas que se muestran en la documentación y cambiándolas por las corregidas).
+
+        ```kotlin title="DeepLinkHandler.kt"
+        package com.example.emmaintegrationtest.ui.navigation
+
+        import android.content.Intent
+        import android.net.Uri
+        import android.os.Bundle
+        import androidx.appcompat.app.AppCompatActivity
+        import com.example.emmaintegrationtest.PowlinkActivity
+        import com.example.emmaintegrationtest.ui.notification.CouponsActivity
+        import com.example.emmaintegrationtest.ui.other.RichPushErrorActivity
+        import io.emma.android.EMMA
+        import io.emma.android.utils.EMMALog
+
+        class DeepLinkHandler : AppCompatActivity() {
+            private val SCHEME = "emma"
+            private val COUPONS_ACTIVITY_HOST_VALUE = "cupones"
+            private val POWLINKS_ACTIVITY_HOST_VALUE = "powlinks"
+
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+                EMMA.getInstance().checkForRichPush()  // [!code --]
+                EMMA.getInstance().checkForRichPushUrl() // [!code ++]
+
+                if (intent.data != null ) {
+                    // Show basic information about the recieved deeplink
+                    EMMALog.d("schema:${intent.data?.scheme}, host:${intent.data?.host}")
+
+                    // Check schema value
+                    checkSchema(intent.data)
+
+                    // Handle the recieved deeplink
+                    handle(intent.data)
+                }
+            }
+
+            /**
+             * Dispatch the activity depending of the recieved 'host' value, start the activity and finish it.
+             */
+            private fun handle(uri: Uri?) {
+
+                val intent = when (uri?.host) {
+                    COUPONS_ACTIVITY_HOST_VALUE -> Intent(this, CouponsActivity::class.java)
+                    POWLINKS_ACTIVITY_HOST_VALUE -> Intent(this, PowlinkActivity::class.java)
+                    else -> Intent(this, RichPushErrorActivity::class.java)
+                }
+
+                startActivity(intent)
+                finish()
+            }
+
+            /**
+             * Checks if scheme value inside the intent data equals to the configured scheme value. This
+             * mentioned value is established in [SCHEME].
+             */
+            private fun checkSchema(uri: Uri?) {
+                if (!uri?.scheme.equals(SCHEME)) {
+                    EMMALog.w("El valor 'scheme' recibido no coincide con el configurado en la app.")
+                    finish()
+                }
+            }
+
+            /**
+             * The deeplink inside the rich push is handled after not-null check.
+             * {@inheritDoc}
+             *
+             * @see handle
+             */
+            override fun onNewIntent(intent: Intent?) { // [!code --]
+            override fun onNewIntent(intent: Intent) { // [!code ++]
+                super.onNewIntent(intent);
+                EMMA.getInstance().onNewNotification(intent, true);
+            }
+        }
+        ```
+    </Step>
+    <Step title="Lanzamiento desde EMMA">
+        Ahora, ya puedes lanzar la notificación push desde la platafora de la misma forma que en la configuración por
+        defecto.
+    </Step>
+</Steps>
+
 ### Configuración de Firebase
 ## Integración behavior
 ### Registro e inicio de sesión de usuarios
