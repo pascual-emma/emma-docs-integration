@@ -844,20 +844,67 @@ observar las analíticas de los cupones dentro de EMMA.
 No están enlazados los apartados de ambas documentaciones.
 
 ### Plugins personalizados
-He encontrado la implementación de los plugins confusa. Estoy revisando el repositorio con el proyecto de ejemplo pero
-no está documentado y me está costando entender cómo implementarlo. Creo que la integración no es tan simple como heredar
-únicamente de la clase `EMMAInAppPlugin` como se menciona en la documentación. Si bien es cierto que es lo mínimo que
-necesitas para hacerlo funcionar, pero en la aplicación del ejemplo se hacen más cosas.
+Inicialmente, la explicación de los plugins personalizados puede resultar difícil. Proporcionar un esquema donde se muestren
+los pasos necesarios podría ayudar. No se explica qué pasos son necesarios dentro de la plataforma de EMMA para poder
+recibir el mensaje o, al menos, para poder hacer una prueba de funcionamiento mínimo.
 
-En cuanto al plugin de ejemplo que del repositorio, se crean seis clases para el prisma a mostrar y luego, desde una
-actividad principal, se crea un native ad y se invoca al plugin. Entonces, la integración requiere una clase
-EMMAInAppPrismPlugin que herede de EMMAInAppPlugin y que implementen los métodos mencionados en la documentación.
-Luego, dentro de la clase principal, crear y configurar un EMMANativeAd y pasárselo al plugin.
+<Warning>
+    - El método `getField()` está deprecated y no se proporciona alternativa para sustituirlo. Yo he usado otros
+    métodos que sí se pueden usar como alternativa.
+    - El valor `templateId` que se pide para usar los plugins, no es únicamente el de la plantilla. Es el valor concatenado
+    de la etiqueta `emma-plugin` y el nombre que le hayamos puesto a la plantilla.
+</Warning>
+
+Entonces, sintetizando las clases y métodos que necesitamos, tenemos lo siguiente:
+- Clase `Application`: Dentro de esta clase necesitamos indicar qué clase de nuestra app va a gestionar el plugin personalizado.
+Esto se hace con la instrucción `EMMA.getInstance().addInAppPlugins(CustomPlugin())`, donde en mi caso `CustomPlugin()`
+será mi clase gestora. Esto está bien explicado en la documentación.
+- Clase 'Activity': Aquí hacemos la solicitud del plugin introduciendo el identificador de la plantilla. Yo lo he puesto
+dentro de un evento `setOnClickListener{ }`. Esto está bien explicado en la documentación.
+- Clase personalizada: Esta será la que incluya los métodos `getId()`, `show()` y `dismiss()` (el cual pone en la documentación
+que no está implementado en el SDK). Esto está bíen explicado dentro de la documentación.
+
+Respecto a los métodos que se utilizan para trabajar con el contenido, todo el contenido del anuncio se maneja en el
+método `override fun show(context: Activity?, nativeAd: EMMANativeAd)`. Dentro de este, un ejemplo de uso sería el siguiente:
+```kotlin title="CustomPlugin.kt"
+override fun show(context: Activity?, nativeAd: EMMANativeAd) {
+    context?.let {
+        // Mostramos todas las claves del mapa
+        for (key in nativeAd.nativeAdContent.keys) {
+            EMMALog.v("$logBanner key_value: $key")
+        }
+
+        // Mostramos el contenido que se ha puesto en la plataforma
+        for (value in nativeAd.nativeAdContent.values) {
+            EMMALog.v("$logBanner field_value: ${value.fieldValue}")
+        }
+    }
+}
+```
+
+La variable `logBanner` es un formato que le he dado yo para poder mostrar el nombre de la clase. No guarda relación con el
+SDK. Lo he hecho así:
+```kotlin title="CustomPlugin.kt"
+class CustomPlugin: EMMAInAppPlugin() {
+    private val logBanner = "${this.javaClass.simpleName} class | "
+}
+```
+
+De esta forma, al pulsar en el botón que activa la solicitud, obtenemos por Logcat toda la información. Se muestra de
+la siguiente forma:
+```log
+EMMA    com.example.emmaintegrationtest     V  CustomPlugin class| key_value: Body
+EMMA    com.example.emmaintegrationtest     V  CustomPlugin class| field_value: prueba de plugin
+```
+
+Para poder lanzar el anuncio a una vista, se podría inflar (como se ha hecho en otros puntos), lo cual queda a disposición
+de cliente.
+
+Respecto al plugin de ejemplo que se ofrece, creo que es una configuración demasiado compleja para ofrecerla como ejemplo.
+Se pueden ofrecer diferentes ejemplos donde uno sea una configuración mínima (como la que he puesto ahora) y luego, otro
+o varios que sean más complejos.
 
 Creo que es necesario explicar más pasos para entender el cómo crear un plugin de forma rápida y sencilla.
-
-
-
 
 ### Revisión de enlaces caídos o rotos
 
