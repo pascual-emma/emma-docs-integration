@@ -1,6 +1,614 @@
 ---
 title: Integración con Android
-description: A continuación se muestra cómo se ha organizado la generación del análisis.
+description: Esta guía describe el proceso detallado de integración del SDK de EMMA en una aplicación Android utilizando Kotlin y Android Studio en un entorno de desarrollo basado en Gradle sobre Windows 10
 ---
 
-Android.
+## Requisitos previos
+
+| **Componente**        | **Requerimiento**                                            |
+|-----------------------|--------------------------------------------------------------|
+| **Sistema Operativo** | Windows **10 o superior**                                        |
+| **IDE**               | **Android Studio** (última versión recomendada **2024.3.1**)         |  
+| **Kotlin**            | Versión: **2.0.21**                                             |
+| **Gradle**            | Versión: **8.11.1**                                             |
+| **SDK EMMA**          | Versión: **4.15.5**                                             |
+
+
+## Pasos para la Integración del SDK de EMMA
+
+<Steps>
+  <Step 
+  title="Incluir el Repositorio en tu Proyecto:
+  ">
+
+  Luego de crear el proyecto en tu IDE,  Abre el archivo **settings.gradle.kts**  (nivel del proyecto) ubicado en el directorio **Gradle Scripts**  y agrega la **URL** del repositorio de EMMA  `EMMA( maven { url = uri("https://repo.emma.io/emma") })` en la sección de **repositories**:
+
+  ```kotlin title="settings.gradle.kts(:project Settings)"
+  EMMA( maven { url = uri("https://repo.emma.io/emma") })
+  ```
+
+  ![Paso 1](/matias/images/paso1.png)
+  </Step>
+
+  <Step 
+  title="Añade la dependencia en el archivo build.gradle.kts(:app).
+  ">
+
+ Escribe esta anotación `implementation("io.emma:eMMaSDK:4.15.+")` , La versión más reciente del SDK es la **4.15.5.** Consulta esta [página](https://developer.emma.io/es/android/sdk-upgrades) para detalles sobre las actualizaciones. 
+  
+  ```kotlin title="build.gradle.kts(:app)"
+    implementation("io.emma:eMMaSDK:4.15.5")
+  ```
+
+  ![Paso 2](/matias/images/paso2.png)
+  </Step>
+
+  <Step 
+  title="Obtener el Session Key de EMMA
+  ">
+
+  Para comenzar a utilizar EMMA, puedes guiarte con este [enlace:](https://docs.emma.io/es/home) y así [crear una cuenta;](https://ng.emma.io/es/register) Una vez registrada,  configura tu cuenta siguiendo los pasos indicados [aquí](https://docs.emma.io/es/configuracion)  y luego solicita tus credenciales: la **EMMA Key** y la **API Key**, necesarias para habilitar la integración,  aquí  puedes ver la [guía.](https://docs.emma.io/es/configuracion#general-emma-key-y-api-key) 
+
+  ![Paso 3](/matias/images/paso3.png)
+  </Step>
+
+   <Step 
+  title="Permisos requeridos por el SDK
+  ">
+  El SDK contiene por defecto los siguientes permisos obligatorios. Estos permisos NO se tienen que añadir en el AndroidManifest.xml de la aplicación, ya que es el mismo SDK quien los añade:
+
+  ![Paso 4](/matias/images/paso4.png)
+
+  Si quieres habilitar la localización, tienes que añadir los siguientes permisos al **AndroidManifest.xml** de tu aplicación:
+
+    ```kotlin title="AndroidManifest.xml"
+   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  ```
+  
+  ![Paso 5](/matias/images/paso5.png)
+
+ </Step>
+
+  <Step 
+  title="Sincroniza tu proyecto 
+  ">
+
+  Al sincronizar Gradle, se actualizan dependencias, se configuran ajustes y se procesan los archivos build.gradle, permitiendo que la app se compile correctamente y sin errores.
+   
+  ![Paso 6](/matias/images/paso6.png)
+
+  </Step>
+
+  <Step 
+  title="Inicializar la librería
+  ">
+
+  En tu clase Application, añade lo siguiente:
+
+  
+    ```kotlin title="package com.example.integrationkotlin"
+   import android.app.Application
+import io.emma.android.EMMA
+
+class ExampleApplication : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        val configuration = EMMA.Configuration.Builder(this)
+            .setSessionKey("TU_SESION_KEY")
+            .trackScreenEvents(false)
+            .setDebugActive(BuildConfig.DEBUG)
+            .build()
+
+        EMMA.getInstance().startSession(configuration)
+    }
+}
+  ```
+  <Warning>Recuerda habilitar esta función en tu archivo **build.gradle.kts(:app)** .</Warning>
+
+    ```kotlin title="build.gradle.kts(:app)"
+    buildFeatures {
+        buildConfig = true
+    }
+  ```
+    ![Paso 8](/matias/images/paso8.png)
+
+  <Error>Omitir este paso podría generar un error de la clase BuildConfig. </Error>
+
+  ![Paso 7](/matias/images/paso7.png)
+
+   <Warning>Para asegurarte de que tu clase **ExampleApplication** se ejecute correctamente al iniciar la aplicación, debes registrarla en el archivo **AndroidManifest.xml** dentro de la etiqueta **application**. </Warning>
+
+   ![Paso 9](/matias/images/paso9.png)
+
+  </Step>
+
+   <Step 
+  title="Verificar en la plataforma de EMMA 
+  ">
+
+  Al configurar el SDK en la app, es importante verificar en la [plataforma de EMMA](https://ng.emma.io/es/login) (dashboard) que los usuarios estén siendo registrados como activos. Esto confirma que la integración del SDK fue exitosa y que la app está enviando correctamente los eventos de inicio de sesión e instalación.
+   
+  ![Paso 10](/matias/images/paso10.png)
+
+  </Step>
+
+</Steps>
+
+## Desactivar envío de pantallas
+
+El envío de pantallas está activo por defecto en el SDK de EMMA.Para desactivarlo usa la siguiente configuración: `trackScreenEvents(false)`.
+
+
+    ```kotlin title="package com.example.integrationkotlin"
+   import android.app.Application
+import io.emma.android.EMMA
+
+class ExampleApplication : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        val configuration = EMMA.Configuration.Builder(this)
+            .setSessionKey("TU_SESION_KEY")
+            .trackScreenEvents(false) // [!code focus]
+            .setDebugActive(BuildConfig.DEBUG)
+            .build()
+
+        EMMA.getInstance().startSession(configuration)
+    }
+}
+  ```
+
+## Integración Notificaciones Push
+
+EMMA ofrece un completo sistema de envío y reporting de Notificaciones Push fácil de integrar usando Firebase Cloud Messaging (FCM) en Android.
+
+<Steps>
+ <Step 
+  title="Obtener Sender ID, Server Key y generar certificado SHA
+  ">
+
+Obtén en primer lugar tu propio **Sender ID** y **Server Key** para FCM como se específica en este [artículo.](https://docs.emma.io/es/comunicacion/mensajes-out-app/push-notifications#creaci%C3%B3n-del-proyecto-en-firebase-y-obtenci%C3%B3n-del-certficado)
+
+Debes considerar al configurar el proyecto en Firebase generar las **Huellas digitales del  certificado SHA** con el siguiente comando `./gradlew signingReport` dentro de tu proyecto de Kotlin, usando la terminal.
+
+ ```Js title="Bash"
+     ./gradlew signingReport
+  ```
+
+  ![SHA](/matias/images/sha.png)
+
+  </Step>
+
+ <Step 
+  title="Generar clave privada JSON 
+  ">
+
+Genera un archivo **JSON** de **clave privada**  entrando en la **configuración** de tu proyecto de Firebase , **Cuentas de servicio**, y generar **nueva clave privada**.
+
+
+  ![Clave privada](/matias/images/clave-privada.png)
+
+  </Step>
+
+ <Step 
+  title="Configurar la plataforma EMMA
+  ">
+
+Además debes configurar la plataforma EMMA con ese **archivo JSON** de la siguiente manera; Entra al menu del **borde superior** y accede a **preferencias app**, has click en **Selecciona un fichero JSON**.  
+
+
+  ![Clave privada json](/matias/images/json.png)
+
+  </Step>
+
+ <Step 
+  title="Integrar FCM en tu Service
+  ">
+
+ Hay que añadir el siguiente service al **AndroidManifest.xml**: 
+
+
+    ```kotlin title="AndroidManifest.xml"
+<service
+    android:name="io.emma.android.push.EMMAFcmMessagingService"
+    android:enabled="true"
+    android:exported="false">
+    <intent-filter>
+    <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+    </intent-filter>
+</service>
+  ```
+
+
+  ![Service push](/matias/images/push.png)
+
+  </Step>
+
+  <Step 
+  title="Configurar dependencias de Google Services nivel proyect
+  ">
+
+  Agrega el complemento de Google Services como dependencia en el archivo de Gradle build.gradle.kts a nivel de proyecto: [Aquí](https://firebase.google.com/docs/android/setup?hl=es&authuser=0&_gl=1*cwj5ie*_ga*MzY1NTAyNTYwLjE3MzgyODU5NjU.*_ga_CW55HF8NVT*MTc0NDI3NjkxOS4zMi4xLjE3NDQyNzY5NTAuMjkuMC4w)  más información sobre integración de Firebase 
+
+    ```kotlin title="settings.gradle.kts(:project)"
+  
+ id("com.google.gms.google-services") version "4.3.10" apply false
+  ```
+
+  ![Firebase](/matias/images/firebase.png)
+
+  </Step>
+
+    <Step 
+  title="Configurar dependencias de Google Services nivel app
+  ">
+ Agrega el complemento de los servicios de Google en el archivo de Gradle **build.gradle.kts** a nivel de app.
+
+    ```kotlin title="settings.gradle.kts(:app)"
+  
+ id("com.google.gms.google-services")
+  ```
+  Agrega los SDK de Firebase a tu app en el archivo Gradle build.gradle.kts a nivel de app, agrega las dependencias de los productos de Firebase que quieras usar en tu app. Es recomendable que uses la Firebase Android BoM para controlar las versiones de las bibliotecas.
+
+    ```kotlin title="settings.gradle.kts(:app)"
+  implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+  ```
+
+  ![Firebase App](/matias/images/firebase-app.png)
+
+  </Step>
+
+    <Step 
+  title="Iniciando el sistema de push
+  ">
+
+  Inicia el sistema de push debajo del inicio de sesión en Application, esta anotación usa un icono por defecto se puede personalizar. Debes anotar el siguiente código:
+
+    ```kotlin title="package com.example.integrationkotlin"
+   import android.app.Application
+import io.emma.android.EMMA
+
+class ExampleApplication : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        val configuration = EMMA.Configuration.Builder(this)
+            .setSessionKey("TU_SESION_KEY")
+            .trackScreenEvents(false)
+            .setDebugActive(BuildConfig.DEBUG)
+            .build()
+        
+        val pushOpt =          EMMAPushOptions.Builder(MainActivity::class.java,android.R.drawable.ic_dialog_info)// [!code focus]
+            .setNotificationColor(android.graphics.Color.BLUE)// [!code focus]
+            .setNotificationChannelName("Notificaciones")// [!code focus]
+            .build()// [!code focus]
+
+        EMMA.getInstance().startSession(configuration)
+        EMMA.getInstance().startPushSystem(pushOpt)// [!code focus]
+    }
+}
+  ```
+<Info>
+  Desde Android 13, para recibir notificaciones es necesario solicitar un permiso al  usuario. Para ello, EMMA ha añadido un método al SDK disponible en la versión 4.12 o superiores. (En mi caso uso API 29), por lo tanto, no lo implementaré, este método tiene que ser llamado en un Activity.
+</Info>
+
+  </Step>
+
+    <Step 
+  title="Añadir el método onNewIntent() 
+  ">
+ Añadir el método onNewIntent() llamando a EMMA.onNewNotification(), que verificará si el usuario ha recibido una notificación cuando la app está abierta.
+  ```kotlin title="Kotlin"
+ override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent);
+    EMMA.getInstance().onNewNotification(intent,false);
+}
+  ```
+
+<Warning> Modifica tu archivo  y añade las líneas anteriores, en la documentación oficial la anotación this hace referencia al contexto , en este caso particular la apps ya añade contexto y se quita esa anotación además no añado una url por lo tanto en vez de true que verifica esto quedó en false.</Warning>
+
+  </Step>
+
+</Steps>
+
+## Integración Behavior
+
+Con EMMA puedes conocer la localización de tus usuarios, cómo se registran en tu App, cuántas transacciones realizan y hasta sus características propias. Es decir, toda la información de tus usuarios que obtendrás en la sección de Behavior.
+
+#### Medición de eventos
+
+La plataforma de EMMA hace la diferenciación entre dos tipos de eventos: los que la plataforma incluye por defecto y los eventos personalizados (custom) que puedes integrar según la estructura de tu aplicación.
+
+#### Eventos por defecto
+
+Puedes consultar más información sobre los eventos por defecto [aquí](https://docs.emma.io/es/primeros-pasos/eventos#eventos-por-defecto)
+
+<Warning>
+Es importante destacar que, aunque la integración esté funcionando correctamente, se debe prestar atención al tipo de dato que se maneja en cada uno de los métodos, especialmente en valores como **Double**, **String**, o estructuras como **MapString**, ya que un tipo incorrecto puede provocar errores en tiempo de ejecución o datos mal registrados en la plataforma de EMMA.
+</Warning>
+
+<Steps>
+  <Step title="Medir Registro">
+    El método `EMMA.getInstance().registerUser()` permite enviar información sobre los registros en la aplicación.
+
+    ```kotlin title="Kotlin"
+    fun register() {
+        EMMA.getInstance().registerUser("554234", "test@emma.io")
+    }
+    ```
+  </Step>
+
+  <Step title="Medir transacciones">
+    EMMA permite medir cualquier transacción o compra que se realice en tu app. Este es el ejemplo para medir una transacción:
+
+    ```kotlin title="Kotlin"
+    fun trackTransaction() {
+        EMMA.getInstance().startOrder("<ORDER_ID>", "<CUSTOMER_ID>", 10.0, "")
+        EMMA.getInstance().addProduct("<PRODUCT_ID>", "<PRODUCT_NAME>", 1.0, 10.0)
+        EMMA.getInstance().trackOrder()
+    }
+    ```
+  </Step>
+
+  <Step title="Iniciar transacción">
+    El método para iniciar la transacción es `EMMA.getInstance().startOrder()`.
+
+    ```kotlin title="Kotlin"
+    EMMA.getInstance().startOrder("<ORDER_ID>", "<CUSTOMER_ID>", 10.0, "")
+    ```
+  </Step>
+
+  <Step title="Añadir Productos a la transacción">
+    Una vez iniciada la transacción, hay que añadir los productos a la misma. Para ello usaremos el método `EMMA.getInstance().addProduct()`.
+
+    ```kotlin title="Kotlin"
+    EMMA.getInstance().addProduct("<PRODUCT_ID>", "<PRODUCT_NAME>", 1.0, 10.0)
+    ```
+  </Step>
+
+  <Step title="Medición de la transacción">
+    Una vez tenemos todos los productos añadidos, ejecutamos la medición de la transacción con el método `EMMA.getInstance().trackOrder()`.
+
+    ```kotlin title="Kotlin"
+    EMMA.getInstance().trackOrder()
+    ```
+  </Step>
+
+  <Step title="Cancelar una transacción">
+    En el caso de que se necesite cancelar el tracking de una transacción, usaremos el método `EMMA.getInstance().cancelOrder()`.
+
+    ```kotlin title="Kotlin"
+    fun cancelTransaction() {
+        EMMA.getInstance().cancelOrder("<ORDER_ID>")
+    }
+    ```
+  </Step>
+
+  <Step title="Eventos personalizados">
+
+    Este evento fue implementado siguiendo la arquitectura por capas de la app, lo que permite mantener una separación clara entre la lógica de presentación (UI), el dominio y el acceso al SDK (data).
+
+  </Step>
+    <Step 
+  title="MainActivity.kt
+  ">
+ 
+  Este botón dispara el evento personalizado desde la UI.
+
+
+  ![img custom](/matias/images/custom1.png)
+
+  </Step>
+
+    <Step 
+  title="ViewModel – BehaviorViewModel.kt
+  ">
+Encapsula la lógica del evento personalizado para ser reutilizada fácilmente.
+
+
+  ![img custom](/matias/images/custom2.png)
+
+  </Step>
+
+      <Step 
+  title="Dominio – BehaviorTracker.kt
+  ">
+Define el contrato que implementará la capa de datos.
+
+
+  ![img custom](/matias/images/custom3.png)
+
+  </Step>
+
+        <Step 
+  title="Data – BehaviorTrackerImpl.kt
+  ">
+Aquí es donde se construye el EMMAEventRequest, se agregan los atributos y finalmente se envía el evento al SDK.
+
+
+  ![img custom](/matias/images/custom4.png)
+
+  </Step>
+
+<Info>
+La documentación oficial da como ejemplo el siguiente método:
+Puedes consultar más información sobre los eventos personalizados [aquí.](https://docs.emma.io/es/primeros-pasos/eventos#eventos-personalizados)
+</Info>
+
+```kotlin title="Kotlin"
+val eventRequest = EMMAEventRequest("f983d4bef8fc44dad43a1bb30dde9e3c")
+//Optional: custom attributes
+eventRequest.attributes = attributes
+//Optional: request status listener
+eventRequest.requestListener = requestListener
+//Optional: cumtom id for request delegate
+eventRequest.customId = customId
+
+EMMA.getInstance().trackEvent(eventRequest)
+```
+
+  <Step 
+  title="Identificador de EMMA
+  ">
+Podemos recuperar el identificador interno de EMMA con el método `getUserID()`:
+
+```kotlin title="Kotlin"
+class MainActivity : BaseActivity(), EMMAUserInfoInterface {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        EMMA.getInstance().getUserID()
+    }
+
+    override fun OnGetUserInfo(userInfo: JSONObject?) {
+      // Not implemented
+    }
+
+    override fun OnGetUserID(id: Int) {
+            Log.d("MainActivity", id.toString())
+    }
+}
+```
+  </Step>
+
+   <Step 
+  title="Identificador de dispositivo
+  ">
+El formato del identificador es del tipo UUID V4. Para obtener el identificador del dispositivo usa el siguiente método:
+
+```kotlin title="Kotlin"
+EMMA.getInstance().getDeviceId()
+```
+  </Step>
+
+   <Step 
+  title="Identificador de usuario del cliente (Customer ID)
+  ">
+Para enviar el customer ID independientemente del login/registro usa el siguiente método:
+
+```kotlin title="Kotlin"
+EMMA.getInstance().setCustomerId("<Customer ID>")
+```
+  </Step>
+
+   <Step 
+  title="Configuración del idioma del usuario
+  ">
+Establece manualmente el idioma preferido del usuario.
+Este método permite sobrescribir el idioma predeterminado del dispositivo para establecer un idioma personalizado que se utilizará en todas las peticiones del SDK. Esto resulta útil en aplicaciones que permiten al usuario seleccionar un idioma diferente al configurado en el dispositivo.
+Se debe usar el código de idioma en formato ISO 639-1: 
+
+```kotlin title="Kotlin"
+// En este caso, establece inglés como idioma
+EMMA.getInstance().setUserLanguage("en")
+```
+<Info>Si no se llama a este método, EMMA utilizará por defecto el idioma preferido del usuario configurado en el sistema del dispositivo.</Info>
+  </Step>
+
+   <Step 
+  title="Perfil del usuario (User Info)
+  ">
+Si necesitamos recuperar el perfil del usuario desde la aplicación usaremos el método `getUserInfo()`:
+
+
+```kotlin title="Kotlin"
+class MainActivity : BaseActivity(), EMMAUserInfoInterface {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        EMMA.getInstance().getUserInfo()
+    }
+
+    override fun OnGetUserInfo(userInfo: JSONObject?) {
+      userInfo?.let {
+        // Do something with userInfo
+      }
+    }
+
+    override fun OnGetUserID(id: Int) {
+            // Not implemented
+    }
+}
+```
+  </Step>
+
+   <Step 
+  title="Información de la atribución de la instalación
+  ">
+Después del proceso de atribución, EMMA pone a disposición del SDK la información de atribución del usuario.
+
+Para obtener la información de atribución usaremos el método `getInstallAttributionInfo`:
+
+```kotlin title="Kotlin"
+class MainActivity : BaseActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+         EMMA.getInstance().getInstallAttributionInfo { attribution ->
+            if (attribution != null) {
+               // Do something with attribution
+            }
+        }
+    }
+}
+```
+  </Step>
+
+</Steps>
+
+
+
+## Integración In-App Messaging
+
+EMMA incluye 7 formatos comunicativos diferentes que puedes integrar para impactar a tus usuarios en Android:
+
+- [NativeAd](https://docs.emma.io/es/mensajes-inapp#native-ad) - Formato que integra tus comunicaciones respetando siempre el formato y estilo de los contenidos de la App.
+
+- [StartView](https://docs.emma.io/es/mensajes-inapp#startview) - Formato que se despliega en toda la pantalla mostrando contenido web.
+
+- [AdBall](https://docs.emma.io/es/mensajes-inapp#adball) - Formato comunicativo con forma de burbuja, cuyo click provoca el despliegue de un contenido web.
+
+- [Banner](https://docs.emma.io/es/mensajes-inapp#banner) - Formato básico para tus comunicaciones que puedes utilizar para comunicar mensajes específicos tanto arriba como abajo de la pantalla.
+
+- [Strip](https://docs.emma.io/es/mensajes-inapp#strip) - Formato comunicativo que ocupa la barra de notificaciones del dispositivo y que muestra un mensaje de derecha a izquierda.
+
+- [Coupon](https://docs.emma.io/es/mensajes-inapp#cupón) - Formato que te da la opción de canjear cupones si tienes un lugar físico controlando el número de redenciones, el código promocional y la fecha de activación y finalización.
+
+
+
+
+
+
+
+  <Step 
+  title="
+  ">
+
+
+
+
+  ![](/matias/images/.png)
+
+  </Step>
+
+
+
+```kotlin title=""
+```
+<Info>
+
+</Info>
+
+
+<Warning> </Warning>
