@@ -17,10 +17,12 @@
   "content": {
     "headerDepth": 6
   },
-  "docsearch": {
-    "appId": "ME3MRAOI4N",
-    "apiKey": "ce41085688fcc7a80927981137062ff3",
-    "indexName": "page"
+  "search": {
+    "docsearch": {
+      "apiKey": "580416e7c9699be070912f7b15bf7440",
+      "appId": "ME3MRAOI4N",
+      "indexName": "page"
+    }
   },
   "header": {
     "showThemeToggle": true,
