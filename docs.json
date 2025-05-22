@@ -2,7 +2,25 @@
   "name": "Documentación técnica de integración",
   "description": "Esta documentación se ha generado a partir de lo analizado.",
   "theme": {
-    "primary": "#00a263"
+    "primary": "#00d084",
+    "backgroundLight": "#f5f5f5",
+    "backgroundDark": "#071d21"
+  },
+  "logo": {
+    "light": "/assets/images/logo_light.svg",
+    "dark": "/assets/images/logo_dark.svg"
+  },
+  "favincon": {
+    "light": "/assets/images/book-bookmark.svg",
+    "dark": "/assets/images/logo_dark.svg"
+  },
+  "content": {
+    "headerDepth": 6
+  },
+  "docsearch": {
+    "appId": "ME3MRAOI4N",
+    "apiKey": "ce41085688fcc7a80927981137062ff3",
+    "indexName": "page"
   },
   "header": {
     "showThemeToggle": true,
@@ -27,6 +45,16 @@
   },
   "sidebar": [
     {
+      "group": "Bienvenido/a",
+      "pages": [
+        {
+          "title": "Página principal",
+          "href": "/",
+          "icon": "house"
+        }
+      ]
+    },
+    {
       "group": "Integración de Matías",
       "pages": [
         {
@@ -37,12 +65,12 @@
         {
           "title": "iOS (Swift/Objective-C)",
           "href": "/matias/ios",
-          "icon": "mac"
+          "icon": "apple"
         },
         {
           "title": "Flutter (Dart)",
-          "href": "/matias/lutter",
-          "icon": "dart"
+          "href": "/matias/flutter",
+          "icon": "google"
         }
       ]
     },
@@ -57,12 +85,12 @@
         {
           "title": "iOS (Swift/Objective-C)",
           "href": "/pascual/ios",
-          "icon": "mac"
+          "icon": "apple"
         },
         {
           "title": "Flutter (Dart)",
-          "href": "/pascual/lutter",
-          "icon": "dart"
+          "href": "/pascual/flutter",
+          "icon": "google"
         }
       ]
     },
@@ -70,16 +98,6 @@
       "group": "Otras tareas",
       "icon": "job",
       "pages": [
-        {
-          "title": "Getting to know docs.page",
-          "href": "/",
-          "icon": "rocket"
-        },
-        {
-          "title": "Next Steps",
-          "href": "/next-steps",
-          "icon": "arrow-right"
-        }
       ]
     }
   ]
