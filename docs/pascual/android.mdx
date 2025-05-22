@@ -47,7 +47,7 @@ emmasdk = { module = "io.emma:eMMaSDK", version.ref = "emmasdk" }
 A continuación, en el epígrafe de integración básica se menciona la clave de sesión pero no se utiliza hasta varios
 epígrafes después. Así que no lo mencionaría hasta entonces.
 
-### Ofuscación
+## Ofuscación
 Creo que el apartado actual de ProGuard que hay actualmente, se puede renombrar por Ofuscación y ponerlo dentro del
 apartado Integración básica. A pesar de esto y, en comparación con otras fuentes de documentación, las reglas que se
 proporcionan son relativamente claras. Si bien es cierto que no se menciona nada sobre R8 (la herramienta de ofuscación
@@ -66,7 +66,7 @@ Además, en el apartado se incluye por defecto la identificación de anuncios, p
 la Privacidad en Línea para Niños (COPPA) como sí se hace en la documentación de [Adjust](https://dev.adjust.com/en/sdk/android#add-permissions)
 o [AppsFlyer](https://dev.appsflyer.com/hc/docs/install-android-sdk#the-ad_id-permission).
 
-### Integración de Huawei
+## Integración de Huawei
 En cuanto a la sección de Huawei, parece que su configuración tiene varios pasos más que otros proveedores. Por la
 disposición de la documentación, me ha costado identificar qué partes son de Huawei y cuáles son genéricas para Android.
 Sobre todo las primeras veces que consulté la documentación. Quizás estaría bien separar la implementación de Huawei en
@@ -165,7 +165,7 @@ y [Gradle](https://gradle.org/releases/).
 
 <Warning>No he continuado con la configuración de Huawei.</Warning>
 
-### Inicialización de la librería
+## Inicialización de la librería
 En este [punto](https://developer.emma.io/es/android/integracion-sdk#inicializar-la-librer%C3%ADa), no hay ninguna explicación de por qué se proporciona directamente el código de la clase Application.
 Es decir, si comparamos con la documentación de [AppsFlyer](https://support.appsflyer.com/hc/es/articles/207032066-Gu%C3%ADa-b%C3%A1sica-de-integraci%C3%B3n-del-SDK#select-in-what-class-to-start-the-sdk), se explica que el SDK se puede iniciar desde la clase
 Application (para un inicio inmediato) o desde la clase Activity (para un inicio aplazado), así como los motivos. En el
@@ -177,7 +177,7 @@ no se explica la razón por la cual se debe de aplazar el inicio del SDK. Si lo 
 en su documentación sí tienen un pequeño párrafo en el que explican la razón por la que se tendría que aplazar el inicio,
 que es por políticas de privacidad.
 
-### Privacidad
+## Privacidad
 En comparación con otras fuentes de documentación
 ([estrategia de preservación de la privacidad](https://support.appsflyer.com/hc/es/articles/207032066-Gu%C3%ADa-b%C3%A1sica-de-integraci%C3%B3n-del-SDK#select-the-optoutin-scenario::ae4c6e25)
 y [métodos de preservación de privacidad](https://support.appsflyer.com/hc/es/articles/360001422989-M%C3%A9todos-de-preservaci%C3%B3n-de-la-privacidad-en-el-SDK),
@@ -273,7 +273,7 @@ Para la línea de los metadatos en los rich push, se ha explicado más adelante 
 rich push dentro de este apartado pero creo que no debería mencionarse ni configurarse nada hasta el propio apartado
 de rich push.
 
-### Notificaciones push
+## Notificaciones push
 Cuando se muestran las líneas de código a introducir, se puede resumir o agrupar por fichero y reducir la cantidad de
 bloques. También, cuando se menciona que necesita el fichero `google-services.json`, y justo antes de los bloques de
 código de server key legacy, convendría introducir un bloque de código con las dependencias que Firebase menciona cuando
@@ -305,7 +305,7 @@ override fun onNewIntent(intent: Intent) {
 }
 ```
 
-#### Configuración de Firebase
+### Configuración de Firebase
 Tras descargarme el fichero JSON, los
 [enlaces](https://docs.emma.io/es/comunicacion/mensajes-out-app/push-notifications#c%C3%B3mo-probar-las-notificaciones-push)
 para probar las notificaciones PUSH no direccionan bien al epígrafe
@@ -341,7 +341,7 @@ configuración de mensajes push de EMMA, no he encontrado ninguna configuración
 a nivel de código en el lado del cliente (IDE).
 
 
-### Rich push
+## Rich push
 La configuración de los push enriquecidos se puede hacer de dos formas: Mediante el SDK de EMMA (usando la clase
 `EMMADeepLinkActivity` para filtrar los _deeplinks_) o mediante una clase controladora aparte. Me ha resultado un poco
 confusa la explicación de la documentación, puesto que se menciona la clase controladora auxiliar como un paso a
@@ -546,8 +546,8 @@ pasos.
     </Step>
 </Steps>
 
-### Integración behavior
-#### Registro e inicio de sesión de usuarios
+## Integración behavior
+### Registro e inicio de sesión de usuarios
 No he encontrado información sobre cómo se contabilizan los registros de los usuarios en EMMA. Ni en la documentación de
 integración ni en la de funcionamiento de la plataforma. A la hora de hacer pruebas con la funcionalidad de registro,
 he encontrado que el identificador del usuario se puede modificar usando los métodos de registro e inicio de sesión.
@@ -592,7 +592,7 @@ Ahora, al pulsar en el botón de inicio de sesión y usar el mismo filtro, el id
 otros parámetros, como el sistema operativo, vemos que el resultado es el mismo.  Además, respecto al inicio de sesión
 automático, se hace mención al uso del método `EMMA.loginDefault()` pero no lo encuentro dentro de `EMMA.getInstance().
 
-#### Transacciones
+### Transacciones
 
 En la documentación se mencionan los métodos necesarios para cada tipo de transacción, en cambio, no se ofrece
 documentación sobre los parámetros que usan dichos métodos. Tienes que ir usando el IDE para que te muestre los parámetros.
@@ -602,10 +602,10 @@ En cambio, creo que a veces no es suficiente para comprender el funcionamiento d
 Al realizar una transacción no se obtiene retroalimentación inmediata que permita saber si la operación se ha ejecutado
 correctamente. Únicamente, podemos revisarlo en la plataforma EMMA, pero los datos tardan tiempo en reflejarse.
 
-#### Eventos personalizados
+### Eventos personalizados
 No he encontrado dificultad en la integración de eventos personalizados.
 
-### Perfil de usuario
+## Perfil de usuario
 A la hora de recibir el identificador de usuario, incluso implementando la interfaz `EMMAUserInfoInterface`, el IDE nos
 devuelve el valor `kotlin.Unit`. No nos proporciona el valor del usuario. La configuración del idioma con la
 línea `EMMA.getInstance().setUserLanguage()` no está disponible (quizás con versiones posteriores lo estará). Finalmente,
@@ -630,7 +630,7 @@ class MainActivity : AppCompatActivity(), EMMAUserInfoInterface {
 Respecto a la obtención de la información de usuario con `getUserID()`, el método descrito en la documentación
 devuelve `kotlin.Unit`, no el identificador de usuario.
 
-#### Atribución
+### Atribución
 No se he encontrado dificultad a la hora de implementar el método de atribución. Se pone un enlace para conocer los
 campos de atribución y poder trabajar con ellos en el código. A pesar de eso, hay poca información sobre la atribución.
 En la documentación de integración no se menciona nada sobre cómo probarlo.
@@ -641,8 +641,8 @@ las campañas de atribución. En cambio, no he encontrado nada sobre qué inform
 y qué configuración es necesaria en EMMA para hacerlo funcionar (si tengo que crear una campaña de atribución, cómo tengo
 que crearla, una vez creada cómo la vinculo, etc.).
 
-### Opciones avanzadas
-#### ProGuard
+## Opciones avanzadas
+### ProGuard
 He podido importar la configuración sin problemas. No han saltado errores ni he tenido que modificar nada. A pesar de eso,
 sí que veo necesario algún bloque de información donde se avise cómo activar el Proguard. Como la activación del siguiente comando:
 ```kotlin title="build.gradle (:app)"
@@ -656,8 +656,8 @@ android {
 ```
 O bien, un pequeño bloque de información donde se recuerden los requisitos necesarios para usarlo.
 
-### Integración In-App Messaging
-#### NativeAds
+## Integración In-App Messaging
+### NativeAds
 Comienzo con el primer bloque de código donde se muestra la clase `NativeAdsActivity`. A primera vista, intuyo que todo el
 código de la clase hay que copiarlo y pegarlo en nuestro proyecto y que se puede utilizar sin modificaciones. En cambio,
 no ha sido posible y he tenido que realizar unas modificaciones que, más adelante, describiré.
@@ -821,7 +821,7 @@ tener información sobre el comportamiento del carrousel de native ads. Para la 
 método `sendInAppClick()` le falta un parámetro por mencionar y explicar, que es la campaña.
 
 
-#### StartViews, Adball, Banner y StripView
+### StartViews, Adball, Banner y StripView
 Para los Startviews, no se explica su funcionamiento. Si tengo dos campañas activas de Startviews, como en el código no
 indico cual quiero mostrar, se muestra la última creada. La otra sigue activa. No se puede asignar una plantilla usando
 los métodos. Además, para los Startviews, Adball, Banner y Strip se muestra el bloque de código pero no se indica dónde
@@ -830,7 +830,7 @@ código y la configuración en EMMA ya funcionan.
 
 Todos los tipos de mensajes in-app no están enlazados a su explicación en la documentación de la plataforma.
 
-#### Cupones
+### Cupones
 Respecto a los cupones, su integración me ha parecido confusa inicialmente. En la documentación se nos facilita una
 clase con una breve explicación de la misma y sus métodos, pero de primeras no he entendido cómo éstos interaccionan
 entre sí y cómo se sincronizan con la plataforma. Creo que sería buena idea recordar que los cupones solo muestran la
@@ -843,7 +843,7 @@ observar las analíticas de los cupones dentro de EMMA.
 
 No están enlazados los apartados de ambas documentaciones.
 
-### Plugins personalizados
+## Plugins personalizados
 Inicialmente, la explicación de los plugins personalizados puede resultar difícil. Proporcionar un esquema donde se muestren
 los pasos necesarios podría ayudar. No se explica qué pasos son necesarios dentro de la plataforma de EMMA para poder
 recibir el mensaje o, al menos, para poder hacer una prueba de funcionamiento mínimo.
@@ -906,7 +906,7 @@ o varios que sean más complejos.
 
 Creo que es necesario explicar más pasos para entender el cómo crear un plugin de forma rápida y sencilla.
 
-### Revisión de enlaces caídos o rotos
+## Revisión de enlaces caídos o rotos
 
 <Card title="Dependencias">
     - Enlace del apartado: https://developer.emma.io/es/android/integracion-sdk#dependencias
