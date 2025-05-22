@@ -14,9 +14,6 @@
     "light": "/assets/images/book-bookmark.svg",
     "dark": "/assets/images/logo_dark.svg"
   },
-  "content": {
-    "headerDepth": 6
-  },
   "search": {
     "docsearch": {
       "apiKey": "580416e7c9699be070912f7b15bf7440",
