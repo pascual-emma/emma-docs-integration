@@ -13,6 +13,9 @@ description: Esta guía describe el proceso detallado de integración del SDK de
 | **Gradle**            | Versión: **8.11.1**                                             |
 | **SDK EMMA**          | Versión: **4.15.5**                                             |
 
+## [📦 Descargar APK](https://tusitio.com/app-release.apk)
+
+## [🔧 Repositorio ](https://tusitio.com/app-release.apk)
 
 ## Pasos para la Integración del SDK de EMMA
 
@@ -87,7 +90,7 @@ description: Esta guía describe el proceso detallado de integración del SDK de
   En tu clase Application, añade lo siguiente:
 
   
-    ```kotlin title="package com.example.integrationkotlin"
+    ```kotlin title="ExampleApplication.kts"
    import android.app.Application
 import io.emma.android.EMMA
 
@@ -142,7 +145,7 @@ class ExampleApplication : Application() {
 El envío de pantallas está activo por defecto en el SDK de EMMA.Para desactivarlo usa la siguiente configuración: `trackScreenEvents(false)`.
 
 
-    ```kotlin title="package com.example.integrationkotlin"
+    ```kotlin title="ExampleApplication.kts"
    import android.app.Application
 import io.emma.android.EMMA
 
@@ -161,6 +164,182 @@ class ExampleApplication : Application() {
     }
 }
   ```
+
+  ## Política de familias
+
+Para todas aquellas apps que están dentro del programa **Designed for Families** necesitan cumplir una serie de requisitos respecto a la información a compartir. Para ello EMMA ha habilitado una propiedad en el arranque de sesión para asegurar el cumplimiento de esta política.
+
+
+    ```kotlin title="ExampleApplication.kts"
+   import android.app.Application
+import io.emma.android.EMMA
+
+class ExampleApplication : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        val configuration = EMMA.Configuration.Builder(this)
+            .setSessionKey("TU_SESION_KEY")
+            .setFamiliesPolicyTreatment(true) // [!code focus]
+            .setDebugActive(BuildConfig.DEBUG)
+            .build()
+
+        EMMA.getInstance().startSession(configuration)
+    }
+}
+  ```
+Además, es importante deshabilitar el permiso para recolectar el Google Advertasing ID en el **AndroidManifest**.
+
+    ```kotlin title="AndroidManifest.xml"
+<uses-permission android:name="com.google.android.gms.permission.AD_ID"
+ tools:node="remove"/>
+  ```
+
+
+## Proguard
+Si utilizas **Proguard** o alguna alternativa compatible, a continuación tenemos un ejemplo del contenido del fichero de reglas **proguard-rules.pro.** Puede que tengas que modificar otras reglas dependiendo de cada aplicación.
+    ```kotlin title="proguard-rules.pro"
+# EMMA SDK
+-keep class io.emma.android.** { *; }
+
+# Rules for play services ads identifier
+-keep class com.google.android.gms.common.ConnectionResult {
+    int SUCCESS;
+}
+-keep class com.google.android.gms.ads.identifier.AdvertisingIdClient {
+    com.google.android.gms.ads.identifier.AdvertisingIdClient$Info getAdvertisingIdInfo(android.content.Context);
+}
+-keep class com.google.android.gms.ads.identifier.AdvertisingIdClient$Info {
+    java.lang.String getId();
+    boolean isLimitAdTrackingEnabled();
+}
+
+# Rule for google play referrer
+-keep public class com.android.installreferrer.** { *; }
+
+# Keep generic signatures; needed for correct type resolution
+-keepattributes Signature
+
+# Keep Gson annotations
+-keepattributes RuntimeVisibleAnnotations,AnnotationDefault
+-if class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation class * extends com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowoptimization @com.google.gson.annotations.JsonAdapter class *
+-keepclassmembers,allowobfuscation class * {
+  @com.google.gson.annotations.Expose <fields>;
+  @com.google.gson.annotations.JsonAdapter <fields>;
+  @com.google.gson.annotations.Since <fields>;
+  @com.google.gson.annotations.Until <fields>;
+}
+
+-keepclassmembers class * extends com.google.gson.TypeAdapter {
+  <init>();
+}
+-keepclassmembers class * implements com.google.gson.TypeAdapterFactory {
+  <init>();
+}
+-keepclassmembers class * implements com.google.gson.JsonSerializer {
+  <init>();
+}
+-keepclassmembers class * implements com.google.gson.JsonDeserializer {
+  <init>();
+}
+
+-if class *
+-keepclasseswithmembers,allowobfuscation class <1> {
+  @com.google.gson.annotations.SerializedName <fields>;
+}
+-if class * {
+  @com.google.gson.annotations.SerializedName <fields>;
+}
+-keepclassmembers,allowobfuscation,allowoptimization class <1> {
+  <init>();
+}
+
+# Rules for retrofit2
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepattributes AnnotationDefault
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+-dontwarn javax.annotation.**
+-dontwarn kotlin.Unit
+-dontwarn retrofit2.KotlinExtensions
+-dontwarn retrofit2.KotlinExtensions$*
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface <1>
+
+-if interface * { @retrofit2.http.* <methods>; }
+-keep,allowobfuscation interface * extends <1>
+
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+-if interface * { @retrofit2.http.* public *** *(...); }
+-keep,allowoptimization,allowshrinking,allowobfuscation class <3>
+
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+
+# Rules for okhttp3
+-keepattributes Signature
+-keepattributes Annotation
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
+
+# Rules for glide (used to display images by sdk)
+-keep class com.bumptech.glide.** { *; }
+-dontwarn com.bumptech.glide.**
+
+# Rules for push
+-keep class com.google.firebase.** { *; }
+
+# Rules for Huawei hms push and odid identifier
+-ignorewarnings
+-keepattributes *Annotation*
+-keepattributes Exceptions
+-keepattributes InnerClasses
+-keepattributes Signature
+-keepattributes SourceFile,LineNumberTable
+-keep class com.huawei.hianalytics.**{*;}
+-keep class com.huawei.updatesdk.**{*;}
+-keep class com.huawei.hms.**{*;}
+
+# Rules for Huawei ads-identifier and ads referrer
+-keep class com.huawei.hms.ads.** { *; }
+-keep interface com.huawei.hms.ads.** { *; }
+  ```
+
+<Info>Asegúrate de tener habilitada la minificación y configurado el archivo de reglas</Info>
+
+    ```kotlin title="build.gradle.kts(app)"
+android {
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+}
+
+  ```
+
+Luego utiliza este comando en tu terminal  `./gradlew assembleRelease` para que Proguard compile y ofusque el código con las reglas descritas en el paso anterior 
+    ```Bash title="Bash"
+./gradlew assembleRelease
+  ```
+
+Verifica que haya compilado correctamente, debe aparecer un mensaje similar a esto:
+
+![Proguard](/matias/images/proguard.png)
+
+<Warning> Desde Android Gradle Plugin (AGP) 3.4+, R8 reemplazó a ProGuard por defecto. </Warning>
 
 ## Integración Notificaciones Push
 
@@ -406,7 +585,7 @@ Es importante destacar que, aunque la integración esté funcionando correctamen
   </Step>
 
     <Step 
-  title="ViewModel – BehaviorViewModel.kt
+  title="UI – BehaviorViewModel.kt
   ">
 Encapsula la lógica del evento personalizado para ser reutilizada fácilmente.
 
@@ -585,30 +764,773 @@ EMMA incluye 7 formatos comunicativos diferentes que puedes integrar para impact
 
 - [Coupon](https://docs.emma.io/es/mensajes-inapp#cupón) - Formato que te da la opción de canjear cupones si tienes un lugar físico controlando el número de redenciones, el código promocional y la fecha de activación y finalización.
 
+## NativeAd
 
+EMMA NativeAd te permite obtener la información de un NativeAd correspondiente a una plantilla que se haya definido y configurado en la plataforma de EMMA.
 
-
-
-
+<Steps>
 
   <Step 
-  title="
+  title="Data - NativeAdDataSource.kt
   ">
 
+Esta clase implementa la fuente de datos para anuncios nativos. Forma parte de la **capa de datos** de la arquitectura y encapsula por completo las interacciones con el SDK.Ofrece dos métodos públicos para obtener anuncios; **getNativeAd(...)** para solicitar un anuncio individual y **getNativeAdBatch(...)** para solicitar un lote (batch) de anuncios.
 
+```kotlin title="NativeAdDataSource.kt"
+class NativeAdDataSource : NativeAdDataSourceInterface,
+    EMMAInAppMessageInterface,
+    EMMABatchNativeAdInterface,
+    EMMANativeAdInterface {
 
+    private var singleAdCallback: ((EMMANativeAd) -> Unit)? = null
+    private var batchAdCallback: ((List<EMMANativeAd>) -> Unit)? = null
 
-  ![](/matias/images/.png)
+    override fun getNativeAd(templateId: String, callback: (EMMANativeAd) -> Unit) {
+        singleAdCallback = callback
+        val request = EMMANativeAdRequest().apply {
+            this.templateId = templateId
+        }
+        EMMA.getInstance().getInAppMessage(request, this)
+    }
+
+    override fun getNativeAdBatch(templateId: String, callback: (List<EMMANativeAd>) -> Unit) {
+        batchAdCallback = callback
+        val request = EMMANativeAdRequest().apply {
+            this.templateId = templateId
+            this.isBatch = true
+        }
+        EMMA.getInstance().getInAppMessage(request, this)
+    }
+
+    override fun onReceived(nativeAd: EMMANativeAd) {
+        Log.d("NativeAd", "NativeAd recibido: ${nativeAd.nativeAdContent["Title"]?.fieldValue}")
+        EMMA.getInstance().sendInAppImpression(CommunicationTypes.NATIVE_AD, nativeAd)
+        singleAdCallback?.invoke(nativeAd)
+    }
+
+    override fun onBatchReceived(nativeAds: MutableList<EMMANativeAd>) {
+        Log.d("NativeAd", "Batch recibido con ${nativeAds.size} anuncios.")
+        nativeAds.forEach {
+            EMMA.getInstance().sendInAppImpression(CommunicationTypes.NATIVE_AD, it)
+        }
+        batchAdCallback?.invoke(nativeAds)
+    }
+
+    override fun onShown(campaign: EMMACampaign?) {
+        Log.d("NativeAd", "NativeAd mostrado.")
+    }
+
+    override fun onHide(campaign: EMMACampaign?) {
+        Log.d("NativeAd", "NativeAd ocultado.")
+    }
+
+    override fun onClose(campaign: EMMACampaign?) {
+        Log.d("NativeAd", "NativeAd cerrado.")
+    }
+}
+```
+<Info>[Aquí](https://developer.emma.io/es/android/integracion-sdk#nativead) el ejemplo de la documentación oficial</Info>
 
   </Step>
 
+   <Step 
+  title="Interface – NativeAdRepository.kt
+  ">
 
+  Crear interface que actúe como puente entre la UI/ViewModel y la capa de datos (NativeAdDataSource)
 
-```kotlin title=""
+  ```kotlin title="NativeAdDataSourceInterface.kt"
+interface NativeAdDataSourceInterface {
+    fun getNativeAd(templateId: String, callback: (EMMANativeAd) -> Unit)
+    fun getNativeAdBatch(templateId: String, callback: (List<EMMANativeAd>) -> Unit)
+}
 ```
-<Info>
+  </Step>
 
-</Info>
+  <Step 
+  title="Repositorio – NativeAdRepository.kt
+  ">
+
+  Delega el acceso a los datos al dataSource (que implementa la interfaz).
+
+  ```kotlin title="NativeAdRepository.kt"
+class NativeAdRepository(
+    private val dataSource: NativeAdDataSourceInterface
+) {
+    fun getNativeAd(templateId: String, callback: (EMMANativeAd) -> Unit) {
+        dataSource.getNativeAd(templateId, callback)
+    }
+
+    fun getNativeAdBatch(templateId: String, callback: (List<EMMANativeAd>) -> Unit) {
+        dataSource.getNativeAdBatch(templateId, callback)
+    }
+}
+```
+  </Step>
+
+ <Step 
+  title="UI – NativeAdManager.kt
+  ">
+
+Esta clase encapsula la lógica de carga, renderizado y tracking de anuncios nativos utilizando el SDK de EMMA. Actúa como intermediario entre la capa de dominio (repositorio) y la interfaz de usuario.
+
+  ```kotlin title="NativeAdManager.kt"
+class NativeAdManager(
+  private val context: Context,private val container: RelativeLayout) {
+
+    private val repository = NativeAdRepository(NativeAdDataSource())
+
+    fun loadNativeAd( templateId: String,onAdLoaded: ((EMMANativeAd) -> Unit)? = null,onNoCampaigns: (() -> Unit)? = null) {  
+    }
+    fun loadNativeAdBatch(templateId: String,onNoCampaigns: (() -> Unit)? = null) {
+    }
+    private fun renderNativeAd(nativeAd: EMMANativeAd) {
+    }
+    private fun renderContent( view: View,title: String,body: String,imageUrl: String?,ctaText: String,nativeAd:EMMANativeAd) {
+    }
+    private fun openNativeAd(nativeAd: EMMANativeAd) {
+    }
+    private fun trackImpression(nativeAd: EMMANativeAd) {
+    }
+    fun trackClick(nativeAd: EMMANativeAd) {
+    }
+}
+
+```
+  </Step>
+
+  <Step 
+  title="Manejo de anuncio único
+  ">
+
+Este método solicita un anuncio nativo individual desde el repositorio. Si no hay campañas activas (contenido vacío), dispara el callback **onNoCampaigns**. 
+
+  ```kotlin title="NativeAdManager.kt"
+fun loadNativeAd(
+    templateId: String,
+    onAdLoaded: ((EMMANativeAd) -> Unit)? = null,
+    onNoCampaigns: (() -> Unit)? = null
+) {
+    repository.getNativeAd(templateId) { nativeAd ->
+        if (nativeAd.nativeAdContent.isEmpty()) {
+            onNoCampaigns?.invoke()
+            return@getNativeAd
+        }
+
+        renderNativeAd(nativeAd)
+        onAdLoaded?.invoke(nativeAd)
+    }
+}
+
+```
+  </Step>
+
+  <Step 
+  title="Manejo de multiples anuncios 
+  ">
+
+Permite cargar múltiples anuncios nativos de forma simultánea **(modo batch)** y los renderiza en el contenedor de la UI.
+
+  ```kotlin title="NativeAdManager.kt"
+fun loadNativeAdBatch(
+    templateId: String,
+    onNoCampaigns: (() -> Unit)? = null
+) {
+    repository.getNativeAdBatch(templateId) { ads ->
+        container.removeAllViews()
+        if (ads.isEmpty()) {
+            onNoCampaigns?.invoke()
+            return@getNativeAdBatch
+        }
+
+        ads.forEach { ad -> renderNativeAd(ad) }
+    }
+}
+
+```
+  </Step>
+    <Step 
+  title="Renderizado de anuncio
+  ">
+
+Este método convierte los datos del anuncio en una vista visible dentro del RelativeLayout. Utiliza Glide para cargar imágenes y asigna valores a los campos de texto.
+
+  ```kotlin title="NativeAdManager.kt"
+private fun renderNativeAd(nativeAd: EMMANativeAd) {
+    val view = LayoutInflater.from(context).inflate(R.layout.view_native_ad, container, false)
+    val content = nativeAd.nativeAdContent
+    val containerField = content["container"]
+
+    containerField?.fieldContainer?.forEach { side -> 
+        renderContent(view, side["Title"]?.fieldValue ?: "", ...)
+    } ?: run {
+        renderContent(view, content["Title"]?.fieldValue ?: "", ...)
+    }
+
+    container.addView(view)
+    trackImpression(nativeAd)
+}
+
+```
+  </Step>
+
+    <Step 
+  title="Registro de impresión y clics
+  ">
+Estos métodos notifican al SDK que un anuncio fue visto o clickeado, utilizando los métodos oficiales **sendInAppImpression** y **sendInAppClick**.
+  ```kotlin title="NativeAdManager.kt"
+private fun trackImpression(nativeAd: EMMANativeAd) {
+    EMMA.getInstance().sendInAppImpression(CommunicationTypes.NATIVE_AD, nativeAd)
+}
+
+fun trackClick(nativeAd: EMMANativeAd) {
+    EMMA.getInstance().sendInAppClick(CommunicationTypes.NATIVE_AD, nativeAd)
+}
+
+```
+  </Step>
+  <Step 
+  title="MainActivity – Integración de Native Ads
+  ">
+Esta actividad conecta con `NativeAdManager` para gestionar los anuncios nativos.
+
+  ```kotlin title="MainActivity.kt"
+private fun loadNativeAd() {
+        val templateId = "native-ad-kotlin"
+        val adManager = NativeAdManager(this, nativeAdContainer)
+        adManager.loadNativeAd(templateId)
+    }
+
+    private fun loadNativeAdBatch() {
+        val templateId = "native-ad-kotlin"
+        val adManager = NativeAdManager(this, nativeAdContainer)
+        adManager.loadNativeAdBatch(templateId)
+    }
+``` 
+</Step>
+</Steps>
+
+## StartView
+La StartView es un formato de comunicación que te permite mostrar un contenido HTML, alojado en una URL, en un WebView a pantalla completa.
+ ```kotlin title="StartView"
+fun getStartView() {
+  val startViewRequest = EMMAInAppRequest(EMMACampaign.Type.STARTVIEW)
+  EMMA.getInstance().getInAppMessage(startViewRequest)
+}
+``` 
+
+## AdBall
+El AdBall es una pequeña vista circular que muestra una imagen. Esta vista se puede arrastrar por toda la pantalla y eliminar de ella en cualquier momento, contiene un CTA que es una URL con contenido HTML que lanza un WebView al hacer clic en la ella.
 
 
-<Warning> </Warning>
+ ```kotlin title="AdBall"
+fun getAdBall() {
+  val adBallRequest = EMMAInAppRequest(EMMACampaign.Type.ADBALL)
+  EMMA.getInstance().getInAppMessage(adBallRequest)
+}
+``` 
+## Banner
+El banner es un formato de comunicación que permite adaptar una imagen o GIF en formato banner dentro de una pantalla de la aplicación. Este banner se puede mostrar en el de la pantalla dónde se muestra o en el botom de esta. El banner contiene un CTA configurable en el Dashboard de EMMA y puede ser un deeplink o una URL https. En el caso de ser la segunda opción, al hacer hacer clic se abre un WebView con el contenido de la URL.
+
+<Info>Se recomienda hacer la llamada después de que todos los elementos de la pantalla estén cargados.</Info>
+
+ ```kotlin title="Banner"
+fun getBanner() {
+  val bannerRequest = EMMAInAppRequest(EMMACampaign.Type.BANNER)
+  EMMA.getInstance().getInAppMessage(bannerRequest);
+}
+``` 
+
+## Strip
+El strip te permite mostrar un banner en lo alto de la pantalla del dispositivo con un texto que va pasando a modo de carrusel. Variables como el tiempo de duración de la rotación o el tiempo de visualización son configurables desde el Dashboard.
+
+
+ ```kotlin title="Strip"
+fun getStrip() {
+  val stripRequest = EMMAInAppRequest(EMMACampaign.Type.STRIP)
+  EMMA.getInstance().getInAppMessage(stripRequest);
+}
+``` 
+
+## Coupon
+
+EMMA Coupons te permite obtener, verificar y canjear cupones que se hayan definido y configurado en la plataforma de EMMA. 
+Para crear un cupón en la plataforma EMMA puedes ver [este ](https://docs.emma.io/es/mensajes-inapp#cup%C3%B3n) tutorial.
+
+  <Steps>
+  <Step 
+  title="Data - CouponDataSource.kt
+ ">
+
+  Esta clase implementa la fuente de datos para los Coupones. Forma parte de la **capa de datos** de la arquitectura y se comunica directamente con el SDK de EMMA ´(EMMA.getInstance())´. Gestiona todas las operaciones relacionadas con cupones;
+  Obtención de cupones, Redención de cupones, Cancelación, Consulta de redenciones válidas
+
+ 
+  ```kotlin title="CouponDataSource.kt"
+  class CouponDataSource : CouponDataSourceInterface, EMMACouponsInterface {
+    private var couponsCallback: ((List<EMMACoupon>) -> Unit)? = null
+    private var redemptionCallback: ((Boolean) -> Unit)? = null
+    private var cancelCallback: ((Boolean) -> Unit)? = null
+    private var redeemCountCallback: ((Int) -> Unit)? = null
+
+    override fun getCoupons(callback: (List<EMMACoupon>) -> Unit) {
+    }
+
+    override fun redeemCoupon(couponId: String, callback: (Boolean) -> Unit) {
+    }
+
+    override fun cancelCoupon(couponId: String, callback: (Boolean) -> Unit) {
+    }
+
+    override fun getCouponRedeemCount(couponId: String, callback: (Int) -> Unit) {
+    }
+
+    override fun onCouponsReceived(coupons: List<EMMACoupon>) {
+    }
+
+    override fun onCouponsFailure() {
+    }
+
+    override fun onCouponRedemption(success: Boolean) {
+    }
+
+    override fun onCouponCancelled(success: Boolean) {
+    }
+
+    override fun onCouponValidRedeemsReceived(numRedeems: Int) {
+    }
+}
+
+```
+<Info>[Aquí](https://developer.emma.io/es/android/integracion-sdk#coupon) el ejemplo de la documentación oficial</Info>
+  </Step>
+
+    <Step 
+  title="Interface - CouponDataSourceInterface.kt
+  ">
+
+ Crear interface que actúe como puente entre la UI/ViewModel y la capa de datos **(CouponDataSource)**
+
+  ```kotlin title="CouponDataSourceInterface.kt"
+  interface CouponDataSourceInterface {
+    fun getCoupons(callback: (List<EMMACoupon>) -> Unit)
+    fun redeemCoupon(couponId: String, callback: (Boolean) -> Unit)
+    fun cancelCoupon(couponId: String, callback: (Boolean) -> Unit)
+    fun getCouponRedeemCount(couponId: String, callback: (Int) -> Unit)
+}
+
+```
+  </Step>
+    <Step 
+  title="Repositorio - CouponRepository.kt
+  ">
+
+  Delega el acceso a los datos al dataSource (que implementa la interfaz).
+
+  ```kotlin title="CouponRepository.kt"
+  class CouponRepository(private val dataSource: CouponDataSourceInterface) {
+    fun getCoupons(callback: (List<EMMACoupon>) -> Unit) {
+        dataSource.getCoupons(callback)
+    }
+
+    fun redeemCoupon(couponId: String, callback: (Boolean) -> Unit) {
+        dataSource.redeemCoupon(couponId, callback)
+    }
+}
+
+```
+  </Step>
+
+    <Step 
+  title="UI - CouponManager.kt
+  ">
+  Esta clase transforma los datos del cupón en vistas visibles dentro de un LinearLayout. Utiliza LayoutInflater para inflar la vista desde XML, asigna los textos y configura la acción del botón para redimir.
+
+  ```kotlin title="CouponManager.kt"
+  
+class CouponManager(
+    private val context: Context,
+    private val container: LinearLayout 
+) {
+    private val repository = CouponRepository(CouponDataSource())
+    }
+ 
+    private fun renderCoupon(coupon: EMMACoupon) {
+    }
+
+    private fun redeemCoupon(coupon: EMMACoupon) {   
+    }
+
+```
+  </Step>
+
+  <Step 
+  title="Carga y renderizado del cúpon
+   ">
+
+  Cuando se llama a **loadCoupons()**, se limpian primero todas las vistas dentro del contenedor. Luego, se consulta el repositorio para obtener los cupones, y por cada uno se ejecuta **renderCoupon()** para mostrarlo visualmente.
+  El método **renderCoupon()** infla una vista desde el layout XML, coloca los datos del cupón (título y descripción) y configura un botón para redimirlo.
+ 
+  ```kotlin title="CouponManager.kt"
+  fun loadCoupons() {
+    container.removeAllViews()
+    repository.getCoupons { coupons ->
+        coupons.forEach { renderCoupon(it) }
+    }
+}
+private fun renderCoupon(coupon: EMMACoupon) {
+    val view = LayoutInflater.from(context).inflate(R.layout.view_coupon_item, container, false)
+
+    view.findViewById<TextView>(R.id.tv_coupon_title).text = coupon.title
+    view.findViewById<TextView>(R.id.tv_coupon_description).text = coupon.description
+
+    view.findViewById<Button>(R.id.btn_redeem).setOnClickListener {
+        redeemCoupon(coupon)
+    }
+
+    container.addView(view)
+}
+```
+  </Step>
+ <Step 
+  title="Redención de cupones
+   ">
+
+Cuando un usuario presiona el botón de redención, se llama a redeemCoupon(coupon). Este método envía la solicitud de redención al CouponRepository, y si es exitosa, se recarga la lista de cupones.
+ 
+  ```kotlin title="CouponManager.kt"
+ private fun redeemCoupon(coupon: EMMACoupon) {
+    val couponIdString = coupon.couponId.toString()
+
+    repository.redeemCoupon(couponIdString) { success ->
+        Toast.makeText(
+            context,
+            if (success) "Cupón canjeado!" else "Error al canjear",
+            Toast.LENGTH_SHORT
+        ).show()
+
+        if (success) {
+            container.removeAllViews()
+            loadCoupons()
+        }
+    }
+}
+```
+  </Step>
+
+  
+  <Step 
+  title="MainActivity - Integración de Coupon
+  ">
+  Esta actividad conecta con CouponManager para gestionar los anuncios nativos.
+  ```kotlin title="MainActivity.kts"
+class MainActivity : AppCompatActivity(), EmmaPluginCallback {
+    private lateinit var couponContainer: LinearLayout
+    private lateinit var couponManager: CouponManager
+
+    private fun setupViews() {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        couponContainer = findViewById(R.id.coupon_container)
+        couponManager = CouponManager(this, couponContainer)
+        couponManager.loadCoupons()
+    }
+}
+```
+</Step>
+
+    </Steps>
+
+## Plugins personalizados
+
+A partir de la versión 4.9.0 se ha añadido la posibilidad de poder añadir plugins in-app al SDK. Los plugins in-app funcionan a través de la tecnología de NativeAd.
+
+
+<Steps>
+<Step 
+  title="Data - CustomEmmaPlugin.kts
+  ">
+
+Puedes crear tu propio formato de comunicación y convertirlo en un plugin in-app, para ello es necesario que la clase principal del nuevo formato extienda de la clase abstracta **EMMAInAppPlugin**, esta clase obliga a sobrescribir dos métodos; **show()** y **dismiss()**.
+
+  ```kotlin title="CustomEmmaPlugin.kts"
+  class CustomEmmaPlugin : EMMAInAppPlugin() {
+
+    private var callback: EmmaPluginCallback? = null
+
+    companion object {
+        private const val TAG = "CustomEmmaPlugin"
+        private const val FIELD_TITLE = "Title"
+        private const val FIELD_BODY = "Body"
+        private const val FIELD_CUSTOM = "custom"
+    }
+
+    fun setPluginCallback(callback: EmmaPluginCallback) {
+    }
+    override fun getId(): String = "emma-plugin-test-plugin"
+
+    override fun show(context: Activity?, nativeAd: EMMANativeAd) {
+        context?.let { activity ->
+            try {
+                val pluginData = extractPluginData(nativeAd)
+                callback?.onEmmaPluginLoaded(pluginData)
+                sendImpression(nativeAd) // Informa a EMMA que el plugin fue mostrado
+                invokeShownListeners(nativeAd)
+            } catch (e: Exception) {
+                val errorMessage = "Error en plugin: ${e.message}"
+                Log.e(TAG, errorMessage)
+                callback?.onEmmaPluginError(errorMessage)
+            }
+        } ?: run {
+            callback?.onEmmaPluginError("Contexto nulo en show()")
+        }
+    }
+
+    private fun extractPluginData(nativeAd: EMMANativeAd): EmmaPluginData {
+    }
+
+    fun handleClick(pluginData: EmmaPluginData) {
+    }
+
+    override fun dismiss() {
+        callback?.onEmmaPluginClosed()
+    }
+}
+
+```
+
+<Info>[Aquí](https://developer.emma.io/es/android/integracion-sdk#plugins-personalizados) el ejemplo de la documentación oficial y puedes entrar a [este](https://github.com/EMMADevelopment/inapp-plugin-prism-android) link para ver un Pluging de ejemplo</Info>
+
+</Step>
+<Step 
+  title="Data - EmmaPluginData.kts"
+>
+Clase de datos que contiene la información que será entregada por el plugin una vez cargado. Esta información puede ser usada para renderizar vistas o mostrar contenido personalizado al usuario.
+
+```kotlin title="EmmaPluginData.kts"
+class EmmaPluginData(
+    val title: String,
+    val body: String,
+    val custom: String
+)
+```
+</Step>
+
+<Step 
+  title="Sealed Class - EmmaPluginState.kts
+  ">
+Clase sellada que representa los diferentes estados posibles del plugin. Es útil para manejar el flujo de estados
+
+  ```kotlin title="EmmaPluginState.kts"
+sealed class EmmaPluginState {
+    object Loading : EmmaPluginState()
+    data class Success(val data: EmmaPluginData) : EmmaPluginState()
+    data class Error(val message: String) : EmmaPluginState()
+    object Closed : EmmaPluginState()
+}
+```
+</Step>
+
+<Step 
+  title="UI - EmmaPluginViewModel.kts
+  ">
+
+Clase que implementa la interfaz **EmmaPluginCallback** y expone el estado del plugin mediante un **LiveData**, permitiendo que la capa de UI observe los cambios y actualice su contenido en función del estado actual.
+
+  ```kotlin title="EmmaPluginViewModel.kts"
+class EmmaPluginViewModel : ViewModel(), EmmaPluginCallback {
+
+    private val _pluginState = MutableLiveData<EmmaPluginState>()
+    val pluginState: LiveData<EmmaPluginState> = _pluginState
+
+    override fun onEmmaPluginLoaded(pluginData: EmmaPluginData) {
+        _pluginState.value = EmmaPluginState.Success(pluginData)
+    }
+
+    override fun onEmmaPluginError(error: String) {
+        _pluginState.value = EmmaPluginState.Error(error)
+    }
+
+    override fun onEmmaPluginClosed() {
+        _pluginState.value = EmmaPluginState.Closed
+    }
+
+    override fun onEmmaPluginClicked(pluginData: EmmaPluginData) {
+        // Puedes manejar acciones personalizadas aquí si es necesario
+    }
+}
+ ```
+</Step>
+
+<Step 
+  title="UI - PluginRenderer.kts
+  ">
+ 
+Clase encargada de **renderizar visualmente** el contenido del plugin en pantalla. Toma los datos **EmmaPluginData** y los inserta dentro de un contenedor **FrameLayout** inflando un layout XML.
+
+
+  ```kotlin title="PluginRenderer.kts"
+  class PluginRenderer(
+    private val context: Context,
+    private val container: FrameLayout
+) {
+
+    fun render(data: EmmaPluginData, onClick: (() -> Unit)? = null) {
+        Log.d("PluginRenderer", "Renderizando plugin con título: ${data.title}")
+
+        // Limpia el contenedor
+        container.removeAllViews()
+
+        // Infla el layout sin adjuntarlo inmediatamente
+        val view: View = LayoutInflater.from(context)
+            .inflate(R.layout.emma_plugin_container, container, false)
+
+        // Asigna los textos recibidos
+        view.findViewById<TextView>(R.id.plugin_title)?.text = data.title
+        view.findViewById<TextView>(R.id.plugin_body)?.text = data.body
+        view.findViewById<TextView>(R.id.plugin_custom)?.text = data.custom
+
+        // Configura el botón de acción
+        view.findViewById<Button>(R.id.plugin_action_button)?.setOnClickListener {
+            Log.d("PluginRenderer", "Botón del plugin clickeado")
+            onClick?.invoke()
+        }
+
+        container.addView(view)
+        container.visibility = View.VISIBLE
+        container.requestLayout()
+        container.invalidate()
+    }
+}
+```
+</Step>
+
+<Step 
+  title=" MainActivity
+  ">
+Esta actividad conecta con **CustomEmmaPlugin** para mostrar y gestionar el contenido dinámico que proviene del SDK de EMMA. 
+
+Se integra con el **EmmaPluginViewModel** para observar los cambios de estado del plugin (carga, error, cierre, clic), y renderiza la interfaz del plugin utilizando la clase **PluginRenderer**.
+
+  ```kotlin title=" MainActivity.kts"
+  class MainActivity : AppCompatActivity(), EmmaPluginCallback {
+
+    private lateinit var customEmmaPlugin: CustomEmmaPlugin
+    private val emmaPluginViewModel: EmmaPluginViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        setupEmmaPlugin()
+        observePluginStates()
+
+        findViewById<View>(R.id.btn_test_plugin).setOnClickListener {
+            Toast.makeText(this, "Probando plugin de EMMA...", Toast.LENGTH_SHORT).show()
+
+            val request = EMMANativeAdRequest().apply {
+                templateId = customEmmaPlugin.id
+            }
+
+            try {
+                EMMA.getInstance().getInAppMessage(request)
+            } catch (e: Exception) {
+                emmaPluginViewModel.onEmmaPluginError("Error al cargar el plugin: ${e.message}")
+            }
+        }
+    }
+
+    private fun setupEmmaPlugin() {
+        customEmmaPlugin = CustomEmmaPlugin().apply {
+            setPluginCallback(this@MainActivity)
+        }
+    }
+
+    override fun onEmmaPluginLoaded(pluginData: EmmaPluginData) {
+        emmaPluginViewModel.onEmmaPluginLoaded(pluginData)
+    }
+
+    override fun onEmmaPluginError(error: String) {
+        emmaPluginViewModel.onEmmaPluginError(error)
+    }
+
+    override fun onEmmaPluginClosed() {
+        emmaPluginViewModel.onEmmaPluginClosed()
+    }
+
+    override fun onEmmaPluginClicked(pluginData: EmmaPluginData) {
+        Toast.makeText(this, "Plugin clickeado: ${pluginData.title}", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun observePluginStates() {
+        emmaPluginViewModel.pluginState.observe(this, Observer { state ->
+            when (state) {
+                is EmmaPluginState.Success -> showPluginData(state.data)
+                is EmmaPluginState.Error -> showError(state.message)
+                is EmmaPluginState.Closed -> clearPlugin()
+                is EmmaPluginState.Loading -> showLoading()
+            }
+        })
+    }
+
+    private fun showPluginData(pluginData: EmmaPluginData) {
+        val pluginContainer = findViewById<FrameLayout>(R.id.emma_plugin_container)
+        pluginContainer.visibility = View.VISIBLE
+
+        val renderer = PluginRenderer(this, pluginContainer)
+        renderer.render(pluginData) {
+            Toast.makeText(this, "Plugin clickeado: ${pluginData.title}", Toast.LENGTH_SHORT).show()
+            customEmmaPlugin.handleClick(pluginData)
+        }
+    }
+
+    private fun clearPlugin() {
+        val pluginContainer = findViewById<FrameLayout>(R.id.emma_plugin_container)
+        pluginContainer.removeAllViews()
+        Toast.makeText(this, "Plugin cerrado", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showError(message: String) {
+        Toast.makeText(this, "Error: $message", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showLoading() {
+        Toast.makeText(this, "Cargando plugin...", Toast.LENGTH_SHORT).show()
+    }
+}
+```
+</Step>
+
+<Step 
+  title="Data - ExampleApplication.kts
+  ">
+
+Para integrar un plugin es necesario añadirlo en el sdk después del inicio de sesión, para ello es necesario utilizar el método addInAppPlugin.
+
+```kotlin title="ExampleApplication.kts"
+import android.app.Application
+import io.emma.android.EMMA
+
+class ExampleApplication : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        val configuration = EMMA.Configuration.Builder(this)
+            .setSessionKey("TU_SESION_KEY")
+            .trackScreenEvents(false)
+            .setDebugActive(BuildConfig.DEBUG)
+            .build()
+
+        EMMA.getInstance().startSession(configuration)
+        EMMA.getInstance().addInAppPlugins(CustomEmmaPlugin()) // [!code focus]
+    }
+}
+```
+</Step>
+</Steps>
+
