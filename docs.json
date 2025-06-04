@@ -62,14 +62,9 @@
           "icon": "android"
         },
         {
-          "title": "iOS (Swift/Objective-C)",
-          "href": "/matias/ios",
-          "icon": "apple"
-        },
-        {
-          "title": "Flutter (Dart)",
-          "href": "/matias/flutter",
-          "icon": "google"
+          "title": "React Native Expo (Bare)",
+          "href": "/matias/rn_expo",
+          "icon": "react"
         }
       ]
     },
@@ -87,9 +82,9 @@
           "icon": "apple"
         },
         {
-          "title": "Flutter (Dart)",
-          "href": "/pascual/flutter",
-          "icon": "google"
+          "title": "React Native Expo (Managed)",
+          "href": "/pascual/rn_expo",
+          "icon": "react"
         }
       ]
     },
