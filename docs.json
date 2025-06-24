@@ -77,12 +77,7 @@
           "icon": "android"
         },
         {
-          "title": "iOS (Swift/Objective-C)",
-          "href": "/pascual/ios",
-          "icon": "apple"
-        },
-        {
-          "title": "React Native Expo (Managed)",
+          "title": "React Native Expo",
           "href": "/pascual/rn_expo",
           "icon": "react"
         }
