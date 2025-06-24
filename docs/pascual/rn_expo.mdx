@@ -1,4 +1,462 @@
 ---
-title: Integración del SDK en React Native con Expo. Usando Expo Managed
-description: A continuación se muestra cómo se ha organizado la generación del análisis.
+title: Integración con React Native + Expo
+description: La integración se realiza con el flujo de trabajo Expo Managed.
 ---
+
+📓 [Documentación](https://docs.expo.dev/)
+☁ [EAS](https://expo.dev/eas)
+
+| Flujo               | Environments | Development Build |
+| ------------------- | ------------ | ----------------- |
+| Expo Managed Custom | Android, iOS | Local             |
+
+| Paquete                        | Versión        |
+| ------------------------------ | -------------- |
+| Watchman                       | 025.05.26.00   |
+| Brew                           | Homebrew 4.5.7 |
+| Node                           | v23.10.0       |
+| npm/npx                        | 10.9.2         |
+| Expo                           | 6.3.12         |
+| buildTools                     | 35.0.0         |
+| minSdk                         | 24             |
+| compileSdk                     | 35             |
+| targetSdk                      | 35             |
+| ndk                            | 27.1.12297006  |
+| kotlin                         | 2.0.21         |
+| ksp                            | 2.0.21-1.0.28  |
+| Gradle                         | 8.8.2          |
+| com.android.tools.build:gradle | 8.3.0          |
+| com.google.gms:google-services | 4.4.1          |
+
+---
+La siguiente guía es para crear una aplicación usando Expo pero con un flujo de trabajo gestionado y personalizado. Es decir, tenemos dos flujos de trabajo: flujo gestionado por Expo (Expo Managed) y el flujo descubierto (Expo Bare). En nuestro caso, vamos a usar Expo Managed pero usando un desarrollo de cliente personalizado para poder usar SDK y modificar ficheros nativos a nuestra voluntad.
+
+Primero, abrimos la terminal y acudimos a la carpeta donde vamos a crear el proyecto. Tras esto, introducimos la instrucción siguiente instrucción para crear el proyecto. 
+```shell
+npx create-expo-app@latest
+```
+
+Durante el proceso, el asistente de creación te preguntará qué nombre quieres ponerle. Lo cual ya se deja a tu elección ([Create a project, Expo Docs](https://docs.expo.dev/get-started/create-a-project/)).
+
+Para esta ocasión, dado que la aplicación tendrá un flujo de trabajo gestionado por Expo, la llamaremos `expo-managed-app`, y así se puede diferenciar de otras apps. Tras poner tu nombre, el asistente configura todo lo necesario y te confirma que ya se ha creado la aplicación con los recursos mínimos. 
+
+A continuación, tenemos que seguir los pasos para crear un entorno de desarrollo. Esta parte es importante porque necesitamos escoger uno que nos permita trabajar con el SDK de EMMA ([Set up your environment, Expo Docs](https://docs.expo.dev/get-started/set-up-your-environment/)). Si seguimos con la documentación, en el punto donde pregunta dónde vamos a desarrollar, podemos pulsar en cualquiera de las cuatro opciones que dan. En nuestro caso, seleccionaremos `Android Emulator` (aunque esto solo muestra la configuración necesaria para poder trabajar con la app --SDKs, emuladores, etc.--).
+
+> Respecto al plugin personalizado con Expo Go y EAS Build, es importante saber que no se pueden usar plugins con Expo Go porque esta app ya viene precompilada y no permite modificar el código nativo; solo puede ejecutar el código JavaScript de tu proyecto. En cambio, cuando usas EAS (Expo Application Services) para compilar tu app, Expo aplica los cambios definidos en los plugins antes de generar el archivo nativo (APK o IPA), lo que sí permite incluir librerías o configuraciones personalizadas que requieren acceso a los archivos nativos del proyecto.
+
+Tras esto, seleccionamos la configuración `Development Build` en el apartado de entorno de desarrollo ([Development Build, Expo Docs](https://docs.expo.dev/get-started/set-up-your-environment/?platform=android&device=simulated&mode=development-build#how-would-you-like-to-develop)). A continuación, puedes escoger si quieres usar un _development build_ local o en la nube. Si dejas marcada la opción **Build with Expo Application Services (EAS)**, crearás un _build_ en la nube. Mientras que si la dejas desmarcada, la _build_ será en local y Expo usará una herramienta llamada Watchman. Esta herramienta es un observador de archivos que detecta cambios en tu código fuente y permite un recargado en caliente.
+
+> Si decides no usar la compilación remota de EAS y optas por compilar localmente, **Expo usa herramientas locales para detectar cambios y sincronizar el código JavaScript rápidamente con tu app instalada**. Ahí entra **Watchman**.
+
+Siguiendo la [documentación](https://docs.expo.dev/get-started/set-up-your-environment/?platform=android&device=simulated&mode=development-build&buildEnv=local#install-watchman-and-jdk), Instalamos Watchman si no lo tenemos usando el siguiente comando:
+```shell
+brew install watchman
+```
+
+Tras esto, instalamos la distribución de OpenJDK llamada `Azul Zulu JDK` e introducimos las variables de entorno que nos especifica. 
+
+Ahora, configuramos las variables de entorno de Android Studio. Para ello, acudimos a Android Studio y buscamos `SDK Manager` o seguimos la ruta `Settings/Languages & Frameworks/Android SDK`. Dentro de esta ventana, seleccionamos la última versión del SDK y nos guardamos la ruta del SDK que se muestra en el cuadro de texto `Android SDK Location`. Configuramos las variables de entorno y continuamos con el emulador ([Install Watchman and JDK, Expo Docs](https://docs.expo.dev/get-started/set-up-your-environment/?platform=android&device=simulated&mode=development-build&buildEnv=local#install-watchman-and-jdk)).
+
+Crea e instala el emulador si no lo tienes ([Set up an emulator](https://docs.expo.dev/get-started/set-up-your-environment/?platform=android&device=simulated&mode=development-build&buildEnv=local#set-up-an-emulator)).
+
+Ahora, ejecuta el siguiente comando, dentro del directorio raíz de tu aplicación, para crear un entorno de desarrollo local ([Running your app on an Android Emulator](https://docs.expo.dev/get-started/set-up-your-environment/?platform=android&device=simulated&mode=development-build&buildEnv=local#running-your-app-on-an-android-emulator)):
+```shell
+npx expo install expo-dev-client
+```
+
+Luego, ejecutamos el siguiente comando para lanzar la aplicación en el emulador de Android:
+```shell
+npx expo run:android
+```
+
+Ahora, tendrás disponible el directorio de Android dentro del proyecto. Podemos modificar los ficheros nativos directamente y se guardarán todas las modificaciones.
+
+> Es importante saber que, para mantener las modificaciones realizadas en el código nativo, tenemos que ejecutar nuestra aplicación con la instrucción `npx expo run:android`. En cambio, si se ejecuta `npx expo prebuild` o `expo-dev-client` o `expo eject`, el _framework_ va a regenerar las carpetas de Android e iOS y todos los cambios se van a perder.
+
+Ahora, tenemos que activar nuestro servidor de desarrollo. Este servidor se encarga de leer tu código JavaScript, transformarlo para que lo entienda React Native y enviárselo a la app que corre en el emulador o dispositivo ([Start developing, Expo Docs](https://docs.expo.dev/get-started/start-developing/)). Solo necesitas tenerlo encendido mientras desarrollas: cada vez que guardas un cambio, Metro actualiza la app al instante sin necesidad de recompilar todo. Para activarlo, introduce el siguiente comando en la raíz de tu proyecto:
+```shell
+npx expo start
+```
+
+## Configuración inicial de Android Studio
+Dejando de lado la configuración del SDK y el emulador que se han mencionado en puntos anteriores, es posible que necesites configurar el JDK así como actualizar el Gradle de Android Studio. Al abrir la carpeta `tu-app/android/` desde Android Studio, es posible que exista algún conflicto de JDK y/o de versiones de Gradle. Por lo que te explico cómo resolverlas. 
+### Selección del JDK
+Como recordarás de puntos anteriores, hemos descargado un JDK llamado `Azul Zulu JDK`. Ahora, tenemos que seleccionarlo dentro del IDE para poder trabajar con él. Para ello, acude a `Settings/Build, Execution & Deployment/Build Tools/Gradle`. Una vez ahí, en el apartado de _Gradle Projects_ pulsamos en el desplegable de _Gradle JDK_ y seleccionamos `zulu-17`. Tras seleccionar el JDK, pulsamos en OK y sincronizamos el fichero Gradle. 
+
+Tras este paso, es posible que el asistente de instalación de Gradle (AGP) nos lance un aviso de que nuestro proyecto no tiene una versión Gradle actualizada. Esto se debe que dentro del fichero `build.gradle` no se especifica una versión en concreto (esto se puede ver en la línea `classpath('com.android.tools.build:gradle')`) por lo que tenemos que especificarle una versión o que la versión que tenemos no es la última. Para saber cuál es la correcta, nos podemos fijar en la documentación de [Expo SDK 50](https://expo.dev/changelog/2024-01-18-sdk-50?). Por lo que la versión que va a tener nuestro proyecto será la `8.3.0`, y nuestra línea anterior quedaría tal que `classpath('com.android.tools.build:gradle:8.3.0')`. Esta versión no es la más actualizada, pero en el momento en que se redactan estas líneas, es la versión más estable y segura para Expo SDK 50.
+
+Ahora ya podemos comenzar con la documentación del SDK de EMMA.
+
+---
+Todos los comentarios a continuación, son las observaciones realizadas durante la implementación.
+## Implementación del SDK de EMMA
+Tras instalar el SDK de EMMA con la línea `npm install emma-react-native-sdk`. Luego, aunque tu versión de React Native sea superior a la `0.60`, tenemos que volver a generar los ficheros de Android e iOS con el comando `npx expo prebuild`, luego `npx expo run:android`. A continuación, comenzamos a insertar todas las dependencias.
+
+Me está lanzando un error `Argument type mismatch: actual type is 'kotlin.String?', but 'kotlin.String' was expected.`, dentro de la clase `node_modules/emma-react-native-sdk/android/src/main/java/io/emma/reactnative/EmmaSerializer.kt:193:23`. Este error se puede solventar modificando el método `fun ReadableArray.toStringArray(): Array<String>` dentro de la clase `EmmaSerializer.ket`. El método debe quedar como :
+```kotlin
+fun ReadableArray.toStringArray(): Array<String> {
+    val array = arrayListOf<String>()
+    for (i in 0 until size()) {
+        if (getType(i) == ReadableType.String) {
+            array.add(getString(i) ?: "") // antes era 'array.add(getString(i))'
+        }
+    }
+    return array.toTypedArray()
+}
+```
+
+Además, tenemos que modificar el fichero `project/build.gradle` añadiendo lo siguiente:
+```kotlin
+include ':emma-react-native-sdk'  
+project(':emma-react-native-sdk').projectDir = new File(rootProject.projectDir, '../node_modules/emma-react-native-sdk/android')
+```
+
+Y el fichero `app/build.gradle` añadiendo lo siguiente:
+```kotlin
+dependencies {
+	implementation project(':emma-react-native-sdk')
+}
+```
+
+Tras estas modificaciones, entramos en el directorio `expo-managed-app/android` y limpiamos los ficheros de Gradle con `./gradlew clean`. Cuando termine el proceso de limpieza, volvemos al directorio raíz `expo-managed-app` y volvemos a ejecutar el emulador de Android con `npx expo run:android`. El emulador deberá cargarse correctamente.
+
+### Vinculación con la plataforma EMMA
+Vamos a crear una nueva aplicación en la plataforma de EMMA, un proyecto nuevo en Firebase y luego vincularemos las firmas y las claves.
+
+#### Dependencias
+Debemos asegurarnos de tener las siguientes dependencias para utilizar el SDK. Solo se indica lo necesario para el SDK, es posible que en tu fichero tengas más dependencias. No indico, entonces, las dependencias e instrucciones que ya vienen por defecto
+```kotlin title:build.gradle(:project)
+buildscript {
+    dependencies {
+        classpath('com.android.tools.build:gradle:8.3.0')
+        classpath('com.google.gms:google-services:4.4.1')
+    }
+}
+
+allprojects {
+    repositories {
+        // Repositorio Amazon AWS
+        maven {
+            url "https://emma-apk.s3.amazonaws.com"
+            content {
+                includeGroup "io.emma"
+            }
+        }
+
+        // Repositorio privado
+        maven {
+            url "https://repo.emma.io/emma"
+            content {
+                includeGroup "io.emma"
+            }
+        }
+    }
+}
+```
+
+#### _Fingerprints_
+Para las firmas de nuestra aplicación Android, ejecutamos el siguiente comando en la terminal de Android Studio:
+```shell
+keytool -list -v \
+-keystore ~/.android/debug.keystore \
+-alias androiddebugkey \
+-storepass android \
+-keypass android
+```
+
+Donde `-keystore ~/.android/debug.keystore` es la ruta del _keystore_ de debug (creado automáticamente por Android Studio o el sistema), `-alias androiddebugkey` es el alias por defecto para debug, `-storepass android` y `-keypass android` son contraseñas por defecto (sí, son literalmente "android").
+
+La terminal te tiene que imprimir información sobre el fichero creado y también las firmas SHA256 y SHA1. Para la plataforma de EMMA necesitamos SHA256.
+
+Introducimos las claves tanto en la plataforma EMMA con en Firebase.
+
+### Inicio de sesión
+Se hace una mención al fichero `app.tsx` pero el fichero principal en Expo es el `index.tsx`. En este apartado no se especifican las importaciones necesarias para comenzar a iniciar sesión. A continuación pongo las importaciones y las instrucciones a añadir para iniciar sesión:
+```tsx
+import EmmaSdk from 'emma-react-native-sdk';
+import { useEffect } from 'react';
+
+export default function HomeScreen() {
+	// Parámetros de inicio de sesión
+	const startSessionParams = {
+	    sessionKey: '<EMMA_KEY>',
+	    isDebug: true,
+	    customPowlinkDomains: ['<POWLINK_SCHEME>'],
+	    customShortPowlinkDomains: ['SHORT_POWLINK_SCHEME'],
+	    trackScreenEvents: true,
+	};
+	
+	useEffect(() => {
+    const handleStartSession = async () => {
+      console.log('Iniciando sesión');
+      try {
+        await EmmaSdk.startSession(startSessionParams);
+        console.log('Sesión iniciada en ', Platform.OS);
+        
+      } catch (err) {
+        console.error('Sesión fallida en ', err);
+      }
+    };
+
+    handleStartSession();
+  }, []);
+}
+```
+
+### Notificaciones push
+[Fuente](https://developer.emma.io/es/react-native/integration#push)
+En el primer bloque de código no se menciona si se pone en el `build.gradle` del proyecto o de la aplicación. En el segundo bloque sí se especifica, pero creo que también tiene que estar en el primero. Respecto al segundo bloque de código, hay que actualizar la versión de `firebase-messaging` de `21.0.1` a `24.1.1`.
+
+```kotlin title:build.gradle(:app)
+apply plugin: 'com.google.gms.google-services'
+
+dependencies {
+    implementation 'com.google.firebase:firebase-messaging:24.1.1'
+    implementation platform('com.google.firebase:firebase-bom:33.15.0')
+    implementation("io.emma:eMMaSDK:4.15.5") // usar la última versión disponible
+    implementation project(':emma-react-native-sdk')
+    implementation('com.google.firebase:firebase-analytics')
+}
+```
+
+Ahora, debemos tener la siguiente configuración en el manifiesto de Android.
+```xml title:AndroidManifest.xml
+<manifest>
+	<application>
+		<service
+            android:name="io.emma.android.push.EMMAFcmMessagingService"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>	</application>
+</manifest>
+```
+
+Tras esto, introducimos la configuración de las notificaciones _push_ en la clase `MainApplication.kt`.
+```kotlin title:MainApplication.kt
+import android.app.Application
+import android.content.res.Configuration
+import android.util.Log
+import androidx.core.content.ContextCompat
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.android.gms.tasks.OnCompleteListener
+import io.emma.android.EMMA
+import io.emma.android.model.EMMAPushOptions
+import io.emma.android.utils.EMMALog
+
+class MainApplication : Application(), ReactApplication {
+
+    override fun onCreate() {
+        super.onCreate()
+        setPushConfiguration()          // Config de push específico EMMA
+        setFirebasePushConfiguration()  // Config push de Firebase
+    }
+
+    private fun setPushConfiguration() {
+        try {
+            val pushOpt =
+                EMMAPushOptions.Builder(MainActivity::class.java, R.drawable.notification_icon)
+                    .setNotificationColor(ContextCompat.getColor(this, R.color.yellow))
+                    .setNotificationChannelName("Mi custom channel")
+                    .build()
+
+            EMMA.getInstance().startPushSystem(pushOpt)
+            Log.v("Pascual", "Configurando los mensajes push")
+        } catch (e: Exception) {
+            Log.w("Pascual", "No se han podido configurar los mensajes push")
+        }
+    }
+
+    private fun setFirebasePushConfiguration() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w(TAG, "Fetching FCM registration token failed", task.exception)
+                return@OnCompleteListener
+            }
+
+            val token = task.result
+            val msg = getString(R.string.msg_token_fmt, token)
+            Log.d(TAG, msg)
+        })
+    }
+}
+```
+
+Tras esto, debemos de crear los recursos que se usan en el mensaje _push_, como `R.color.yellow`, por ejemplo. Se describen a continuación:
+- `R.drawable.notification_icon`: Debemos crear un icono para usarlo en la notificación. Este icono tiene que ir dentro del directorio `app/res/drawable`.
+
+- `R.color.yellow`: Dentro del fichero `app/res/values/colors.xml` creamos una fila para el color que hemos establecido `<color name="yellow">#FAE150</color>`.
+
+- `R.string.msg_token_fmt`: Acudimos a `app/res/values/strings.xml` e introducimos la línea `<string name="msg_token_fmt">Token: %1$s</string>`.
+
+Ahora, creamos una clase que nos permita usar la funcionalidad de Firebase para las notificaciones push. Para ello, en el directorio que elijas, necesitas una clase con el siguiente contenido:
+```kotlin title:FirebaseDispatcher.kt
+import android.content.ContentValues  
+import android.util.Log  
+import com.google.firebase.messaging.FirebaseMessagingService  
+  
+class FirebaseDispatcher : FirebaseMessagingService() {  
+  
+    override fun onNewToken(token: String) {  
+        Log.d(ContentValues.TAG, "Refreshed token: $token")  
+        sendRegistrationToServer(token)  
+    }  
+  
+    private fun sendRegistrationToServer(token: String?) {  
+        Log.d(ContentValues.TAG, "sendRegistrationTokenToServer($token)")  
+    }  
+}
+```
+
+Finalmente, debemos de configurar la clase `MainActivity` de la siguiente forma. Implementando `EMMAUserInfoInterface` con sus métodos obligatorios `OnGetUserInfo()` y `OnGetUserID()`, sin necesidad obligatoria de incluir funcionalidad especial.
+```kotlin title:MainActivity.kt
+import android.util.Log   
+import io.emma.android.EMMA  
+import io.emma.android.interfaces.EMMAUserInfoInterface  
+import io.emma.android.utils.EMMALog  
+import org.json.JSONObject 
+  
+class MainActivity : ReactActivity(), EMMAUserInfoInterface {  
+	override fun onCreate(savedInstanceState: Bundle?) {    
+		super.onCreate(null)  
+		EMMA.getInstance().requestNotificationPermission()  
+		EMMALog.v("Notificaciones activadas: ${EMMA.getInstance().areNotificationsEnabled()}") 
+	}    
+	
+	override fun OnGetUserInfo(userInfo: JSONObject?) {  
+        userInfo?.let { info: JSONObject ->  info.toString() }    
+    }  
+  
+    override fun OnGetUserID(id: Int) {  
+        // Not implemented  
+    }  
+}
+```
+
+Con esto, la parte de Android quedaría finalizada. Únicamente, volvemos a compilar el proyecto con 
+```shell title:expo-managed-app/
+npx expo run:android
+```
+
+> No se incluye la configuración necesaria en Firebase o en la plataforma de EMMA.
+
+Ahora tenemos que configurar la clase principal de Expo. Para ello, debemos introducir las siguientes líneas en el fichero `app/(tabs)/index.tsx`. Es posible 
+```tsx title:index.tsx
+import EmmaSdk from 'emma-react-native-sdk';
+import { useEffect, useState } from 'react';
+
+export default function HomeScreen() {
+    const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
+	
+	const handleStartPush = async () => {
+        console.log('Iniciando configuración de push');
+        try {
+            EmmaSdk.startPush({
+                classToOpen: 'com.pascual1.expomanagedapp.MainActivity',
+                iconResource: 'notification_icon',
+            });
+            console.log('Mensajes push configurados');
+        } catch (err) {
+            console.error('Error al configurar los mensajes push:', err);
+        }
+    };
+
+    useEffect(() => {
+        EmmaSdk.requestNotificationPermission();
+        handleStartSession();
+        handleStartPush();
+
+        const checkNotifications = async () => {
+            try {
+                const isEnabled = await EmmaSdk.areNotificationsEnabled();
+                setNotificationsEnabled(isEnabled);
+                console.log('Notifications activated: ', isEnabled);
+            } catch (error) {
+                console.error('Error checking notifications: ', error);
+            }
+        };
+
+        checkNotifications();
+    }, []);
+
+    return (
+        <ParallaxScrollView
+            headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+            headerImage={
+                <Image
+                    source={require('@/assets/images/partial-react-logo.png')}
+                    style={styles.reactLogo}
+                />
+            }>
+            <ThemedView style={styles.titleContainer}>
+                <ThemedText type="title">Welcomeeeeee!</ThemedText>
+                <HelloWave />
+            </ThemedView>
+
+            <ThemedView style={styles.stepContainer}>
+                <ThemedText type="subtitle">Notificaciones push</ThemedText>
+                <ThemedText>
+                    Notificaciones activadas:{' '}
+                    {notificationsEnabled !== null ? notificationsEnabled.toString() : 'Cargando...'}
+                </ThemedText>
+            </ThemedView>
+
+            <ThemedView style={styles.stepContainer}>
+                <ThemedText type="subtitle">Paso 1: Edita</ThemedText>
+                <ThemedText>
+                    Edita <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> para ver cambios. Presiona{' '}
+                    <ThemedText type="defaultSemiBold">
+                        {Platform.select({
+                            ios: 'cmd + d',
+                            android: 'cmd + m',
+                            web: 'F12',
+                        })}
+                    </ThemedText>{' '}
+                    para abrir el menú de desarrollo.
+                </ThemedText>
+            </ThemedView>
+
+            <ThemedView style={styles.stepContainer}>
+                <ThemedText type="subtitle">Paso 2: Explora</ThemedText>
+                <ThemedText>
+                    {`Toca la pestaña Explore para aprender más sobre esta plantilla.`}
+                </ThemedText>
+                <Button title="Registrar usuario" onPress={handleRegisterUser} />
+                <Button title="Iniciar sesión" onPress={handleLoginUser} />
+            </ThemedView>
+
+            <ThemedView style={styles.stepContainer}>
+                <ThemedText type="subtitle">Paso 3: Reinicia</ThemedText>
+                <ThemedText>
+                    {`Cuando estés listo, ejecuta `}
+                    <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> para comenzar limpio.
+                </ThemedText>
+            </ThemedView>
+        </ParallaxScrollView>
+    );
+}
+
+const styles = StyleSheet.create({
+    titleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    stepContainer: {
+        gap: 8,
+        marginBottom: 8,
+    },
+    reactLogo: {
+        height: 178,
+        width: 290,
+        bottom: 0,
+        left: 0,
+        position: 'absolute',
+    },
+});
+```
+
+
+
