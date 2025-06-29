@@ -1,0 +1,156 @@
+---
+title: Dokka
+description: Configuración de Dokka para Android (Single-module) usando Kotlin.
+---
+
+## Conocimientos previos
+Dokka genera documentación de tu código Kotlin/Java.
+
+Según el formato de salida (HTML, Javadoc, Markdown) que deseas, los plugins a declarar cambian.
+
+<Warning> Incompatibilidades: Javadoc y Mermaid no son compatibles entre sí.</Warning>
+
+## Instalación básica
+
+<Steps>
+  <Step title="En build.gradle.kts (Proyecto raíz)">
+
+    ```bash title="build.gradle.kts (Proyecto raíz)"
+plugins {
+    id("org.jetbrains.dokka") version "2.0.0"
+}
+
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.dokka:dokka-base:2.0.0")
+    }
+}
+    ```
+
+  </Step>
+
+  <Step title="  En build.gradle.kts (Módulo :app)">
+
+    ```bash title="build.gradle.kts (Módulo :app)"
+plugins {
+    id("org.jetbrains.dokka") version "2.0.0"
+}
+
+dependencies {
+    dokkaPlugin("org.jetbrains.dokka:android-documentation-plugin:2.0.0")
+}
+    ```
+
+  </Step>
+
+  <Step title="Migración a Dokka V2">
+
+    Agrega en gradle.properties:
+
+    ```kotlin title="gradle.properties"
+# Habilitar Dokka V2
+org.jetbrains.dokka.experimental.gradle.pluginMode=V2Enabled
+org.jetbrains.dokka.experimental.gradle.pluginMode.noWarn=true
+
+# Mejorar rendimiento en compilación
+org.gradle.caching=true
+org.gradle.parallel=true
+    ```
+
+  </Step>
+
+<Step title="Generar documentación">
+
+  
+Ejecuta en terminal en el root del proyecto:
+
+    ```bush title="bush"
+    ./gradlew dokkaGenerate
+    ```
+Formato HTML: Podrás ver un enlace local para revisar la documentación.
+  </Step>
+
+<Info>Por defecto, se genera en: ./app/build/dokka (a menos que configures otro directorio).</Info>
+
+<Step title="Modificar directorio de salida">
+Si quieres que la documentación no se elimine al limpiar (./gradlew clean), define un directorio persistente. En build.gradle.kts (:app):
+
+    ```kotlin title="Gradle"
+    dokka {
+    dokkaPublications.html {
+        outputDirectory.set(rootDir.resolve("docs/dokka"))
+    }
+}
+    ```
+  </Step>
+
+<Step title="Configurar estilos y personalización">
+Para personalizar estilos, logos y comportamiento, usa la siguiente configuración en build.gradle.kts (:app):
+
+    ```kotlin title="Gradle"
+dokka {
+    moduleName.set("Mi Proyecto Android")
+
+    dokkaPublications.html {
+        suppressInheritedMembers.set(true)
+        failOnWarning.set(true)
+        outputDirectory.set(rootDir.resolve("docs/dokka"))
+    }
+
+    dokkaSourceSets.configureEach {
+        includes.from("Module.md")
+
+        sourceLink {
+            localDirectory.set(file("src/main/java/"))
+            remoteUrl.set(URL("https://github.com/miusuario/miproyecto/tree/main/app/src/main/java"))
+            remoteLineSuffix.set("#L")
+        }
+
+        documentedVisibilities.set(setOf(VisibilityModifier.Public, VisibilityModifier.Private))
+    }
+
+    pluginsConfiguration.html {
+        footerMessage.set("2025 © EMMA by Arkana Apps")
+        customAssets.from("../docs/assets/emma-logo.png")
+        customStyleSheets.from(
+            "../docs/assets/style.css",
+            "../docs/assets/logo-styles.css"
+        )
+    }
+}
+
+    ```
+  </Step>
+
+
+
+
+<Step title="">
+
+    ```kotlin title=""
+
+    ```
+  </Step>
+
+
+
+
+
+
+
+
+
+
+    </Steps>
+
+✅ moduleName: Nombre visible en la documentación.
+
+✅ suppressInheritedMembers: Oculta miembros heredados.
+
+✅ failOnWarning: Falla si hay warnings (útil en CI/CD).
+
+✅ sourceLink: Enlaza a tu GitHub para ir directo al código.
+
+✅ footerMessage y customAssets: Personaliza logos, CSS, y pie de página.
+
+    ![Paso 1](/matias/images/dokka.png)

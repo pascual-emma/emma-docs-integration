@@ -87,6 +87,21 @@
       "group": "Otras tareas",
       "icon": "job",
       "pages": [
+        {
+          "title": "Getting to know docs.page",
+          "href": "/",
+          "icon": "rocket"
+        },
+          {
+          "title": "Dokka",
+          "href": "/dokka/index",
+          "icon": "android"
+        },
+        {
+          "title": "Next Steps",
+          "href": "/next-steps",
+          "icon": "arrow-right"
+        }
       ]
     }
   ]

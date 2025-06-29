@@ -1,4 +1,522 @@
 ---
-title: Integración del SDK en React Native con Expo. Usando Bare Managed.
-description: A continuación se muestra cómo se ha organizado la generación del análisis.
+title: Integración con React Native / Expo
+description: Integración del SDK de EMMA en una app React Native / Expo con VSCode, usando EAS Build y ajustes en código nativo Android, en entorno Windows 10.
 ---
+
+## Requisitos previos
+
+| **Componente**        | **Requerimiento**                       |
+| --------------------- | --------------------------------------- |
+| **Sistema Operativo** | Windows **10 o superior**               |
+| **Editor de Código**  | **Visual Studio Code** (última versión) |
+| **Node.js**           | Versión: **22.13.1**                    |
+| **Expo SDK**          | Versión: **53.0.9**                     |
+| **React**             | Versión: **19.0.0**                     |
+| **React Native**      | Versión: **0.79.2**                     |
+| **React DOM**         | Versión: **19.0.0**                     |
+| **React Native Web**  | Versión: **0.20.0**                     |
+| **Expo Router**       | Versión: **5.0.6**                      |
+| **EAS CLI**           | Versión: **16.7.1**                     |
+| **TypeScript**        | Versión: **5.8.3**                      |
+| **Babel Core**        | Versión: **7.25.2**                     |
+| **ESLint**            | Versión: **9.25.0**                     |
+| **Reanimated**        | Versión: **3.17.4**                     |
+| **Gesture Handler**   | Versión: **2.24.0**                     |
+| **React Navigation**  | Versión: **7.1.6**                      |
+
+<Warning>
+  Esta app fue construida con la versión **22.13.1** de **Node.js** y funcionó
+  correctamente. Sin embargo, debido a la compatibilidad con **EAS** y el **Expo
+  SDK 53** (la versión más reciente), se recomienda utilizar **Node.js** en la
+  versión **^18.18.0** o **^20.9.0**. Además, si alguna librería nativa que
+  necesitas **no es compatible aún con React Native 0.73**, deberías considerar
+  utilizar una versión anterior del **SDK de Expo**. Para más información de
+  cambios y actualizaciones visita el [ChangeLog de
+  Expo](https://expo.dev/changelog).
+</Warning>
+
+## [📦 Descargar APK](https://tusitio.com/app-release.apk)
+
+## [🔧 Repositorio](https://tusitio.com/app-release.apk)
+
+## Crear proyecto con Expo usanso flujo [Bare](https://docs.expo.dev/versions/latest/config/metro/#bare-workflow-setup) y compilando en local y [EAS](https://docs.expo.dev/eas/)
+
+<Steps>
+  <Step title="Crear proyecto">
+    Crear proyecto con plantilla Bare de Expo:
+
+    ```bash title="bash"
+    npx create-expo-app Example --template expo-template-bare-minimum
+    ```
+
+  </Step>
+<Step title="Instalar la CLI de EAS">
+    Instala la herramienta de línea de comandos de EAS globalmente:
+
+    ```bash title="bash"
+    npm install -g eas-cli
+    ```
+
+  </Step>
+
+  <Step title="Iniciar sesión en tu cuenta de Expo">
+    Una vez instalada la [CLI](https://docs-expo-dev.translate.goog/more/expo-cli/?_x_tr_sl=en&_x_tr_tl=es&_x_tr_hl=es&_x_tr_pto=tc&_x_tr_hist=true), inicia sesión en tu cuenta de Expo, o si aún no tienes una cuenta accede a este [link](https://expo.dev/).
+
+    ```bash title="bash"
+    eas login
+    ```
+
+  </Step>
+  <Step title="Prebuild del proyecto">
+    Usa el siguiente comando:
+
+    ```bash title="bash"
+    npx expo prebuild
+    ```
+
+  </Step>
+
+  <Info>
+Con el comando anterior tendrás acceso a los archivos nativos. En este caso, la integración se realizó únicamente para sistemas Android, debido a la limitación del sistema operativo Windows, que no es compatible con iOS.
+  </Info>
+</Steps>
+
+## Pasos para la Integración del SDK de EMMA.
+
+<Steps>
+  <Step title="Incluir el repositorio en tu proyecto">
+    Abrir los ficheros nativos y añadir el repositorio de EMMA
+
+    ```kotlin title="C:expo\example-proyect\android\build.gradle"
+        maven { url 'https://repo.emma.io/emma' }
+    ```
+
+    ![Paso 1](/matias/images/expo-1.png)
+
+  </Step>
+<Step title="Incluir dependencia de EMMA">
+    Abrir los ficheros nativos y añadir la dependencia de EMMA
+
+    ```kotlin title="C:expo\example-proyect\android\app\build.gradle"
+    implementation 'io.emma:eMMaSDK:4.15.5'
+    ```
+
+
+    ![Paso 1](/matias/images/expo-2.png)
+
+</Step>
+<Info>
+  Consulta versiones del SDK EMMA [aquí](https://developer.emma.io/es/android/sdk-upgrades)
+  </Info>
+<Step 
+  title="Obtener el Session Key de EMMA
+  ">
+
+Para comenzar a utilizar EMMA, puedes guiarte con este [enlace:](https://docs.emma.io/es/home) y así [crear una cuenta;](https://ng.emma.io/es/register) Una vez registrada, configura tu cuenta siguiendo los pasos indicados [aquí](https://docs.emma.io/es/configuracion) y luego solicita tus credenciales: la **EMMA Key** y la **API Key**, necesarias para habilitar la integración, aquí puedes ver la [guía.](https://docs.emma.io/es/configuracion#general-emma-key-y-api-key)
+
+![Paso 3](/matias/images/paso3.png)
+
+</Step>
+
+ <Step 
+  title="Inicializar la librería
+  ">
+
+En tu clase Application, añade lo siguiente:
+
+    ```kotlin title="C:expo\example-proyect\android\app\src\main\java\com\emmaexample\MainApplication.kt"
+
+import android.app.Application
+import io.emma.android.EMMA
+
+class MainApplication : Application(), ReactApplication {
+private fun initializeEMMA() {
+val configuration = EMMA.Configuration.Builder(this)
+.setSessionKey("TU_SESION_KEY")
+.setDebugActive(BuildConfig.DEBUG)
+.build()
+
+        EMMA.getInstance().startSession(configuration)
+    }
+
+}
+
+````
+</Step>
+<Warning>Recuerda habilitar esta función en tu archivo **build.gradle.kts(:app)** .</Warning>
+
+  ```kotlin title="build.gradle.kts(:app)"
+  buildFeatures {
+      buildConfig = true
+  }
+````
+
+    ![Paso 8](/matias/images/paso8.png)
+
+{" "}
+
+<Error>
+  Omitir este paso podría generar un error de la clase BuildConfig.{" "}
+</Error>
+
+![Paso 7](/matias/images/paso7.png)
+
+    <Step
+
+title="Compilar a nivel local para verificar inicialización de libreria
+">
+Para compilar localmente, debes acceder al directorio de Android desde la terminal e ingresar el siguiente comando. Esto compilará el proyecto y generará un archivo APK o AAB para instalación local. Además, iniciará el servidor Metro, encargado de servir el código JavaScript.
+
+      ```kotlin title="bush"
+    npx expo run:android
+
+````
+
+
+</Step>
+
+<Info>
+ En esta etapa del desarrollo, se recomienda realizar pruebas de manera local para agilizar el proceso. Aunque también es posible compilar usando EAS, este método suele requerir mucho más tiempo.
+</Info>
+
+ <Step
+title="Verificar en la plataforma de EMMA
+">
+
+Al configurar el SDK en la app, es importante verificar en la [plataforma de EMMA](https://ng.emma.io/es/login) (dashboard) que los usuarios estén siendo registrados como activos. Esto confirma que la integración del SDK fue exitosa y que la app está enviando correctamente los eventos de inicio de sesión e instalación.
+
+![Paso 10](/matias/images/paso10.png)
+
+</Step>
+
+
+</Steps>
+
+## Pasos para la Integración Notificaciones Push.
+<Steps>
+<Step
+title="Generar clave privada JSON
+">
+
+Genera un archivo **JSON** de **clave privada**  entrando en la **configuración** de tu proyecto de Firebase , **Cuentas de servicio**, y generar **nueva clave privada**.
+
+
+![Clave privada](/matias/images/clave-privada.png)
+
+</Step>
+
+<Step
+title="Configurar la plataforma EMMA
+">
+
+Además debes configurar la plataforma EMMA con ese **archivo JSON** de la siguiente manera; Entra al menu del **borde superior** y accede a **preferencias app**, has click en **Selecciona un fichero JSON**.
+
+
+![Clave privada json](/matias/images/json.png)
+
+</Step>
+
+<Step
+title="Integrar FCM en tu Service
+">
+
+Hay que añadir el siguiente service al **AndroidManifest.xml**:
+
+
+  ```kotlin title="android\app\src\main\AndroidManifest.xml"
+<service
+  android:name="io.emma.android.push.EMMAFcmMessagingService"
+  android:enabled="true"
+  android:exported="false">
+  <intent-filter>
+  <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+  </intent-filter>
+</service>
+````
+
+![Service push](/matias/images/push.png)
+
+  </Step>
+
+  <Step 
+  title="Configurar dependencias de Google Services nivel proyect
+  ">
+
+Agrega el classpath en el archivo de Gradle build.gradle.kts a nivel de proyecto: [Aquí](https://firebase.google.com/docs/android/setup?hl=es&authuser=0&_gl=1*cwj5ie*_ga*MzY1NTAyNTYwLjE3MzgyODU5NjU.*_ga_CW55HF8NVT*MTc0NDI3NjkxOS4zMi4xLjE3NDQyNzY5NTAuMjkuMC4w) más información sobre integración de Firebase
+
+    ```kotlin title="settings.gradle.kts(:project)"
+
+    classpath 'com.google.gms:google-services:4.4.2'
+
+````
+
+</Step>
+
+  <Step
+title="Configurar dependencias de Google Services nivel app
+">
+Agrega el complemento de los servicios de Google en el archivo de Gradle **build.gradle.kts** a nivel de app.
+
+  ```kotlin title="\android\app\build.gradle"
+
+apply plugin: "com.google.gms.google-services"
+````
+
+Agrega los SDK de Firebase a tu app en el archivo Gradle build.gradle.kts a nivel de app, agrega las dependencias de los productos de Firebase que quieras usar en tu app. Es recomendable que uses la Firebase Android BoM para controlar las versiones de las bibliotecas.
+
+    ```kotlin title="settings.gradle.kts(:app)"
+
+implementation platform('com.google.firebase:firebase-bom:33.15.0')
+
+````
+</Step>
+
+  <Step
+title="Iniciando el sistema de push
+">
+
+Inicia el sistema de push debajo del inicio de sesión en Application, esta anotación usa un icono por defecto se puede personalizar. Debes anotar el siguiente código:
+
+  ```kotlin title="android\app\src\main\java\com\emmaexpotest\MainApplication.kt"
+
+  val pushOptions = EMMAPushOptions.Builder(MainActivity::class.java, R.drawable.ic_notification)
+      .setNotificationColor(ContextCompat.getColor(this, R.color.push_color))
+      .setNotificationChannelName("Canal EMMA")
+      .build()
+
+      EMMA.getInstance().startPushSystem(pushOptions)
+````
+
+<Info>
+  Desde Android 13, para recibir notificaciones es necesario solicitar un
+  permiso al usuario. Para ello, EMMA ha añadido un método al SDK disponible en
+  la versión 4.12 o superiores. (En mi caso uso API 29), por lo tanto, no lo
+  implementaré, este método tiene que ser llamado en un Activity.
+</Info>
+
+  </Step>
+
+    <Step
+
+title="Añadir el método onNewIntent()
+">
+Añadir el método onNewIntent() llamando a EMMA.onNewNotification(), que verificará si el usuario ha recibido una notificación cuando la app está abierta.
+
+```kotlin title="Kotlin"
+override fun onNewIntent(intent: Intent?) {
+  super.onNewIntent(intent)
+  intent?.let {
+    // Correct EMMA notification handling
+    EMMA.getInstance().onNewNotification(it, true)
+    handleIntent(it)
+  }
+}
+```
+
+  </Step>
+
+ <Step 
+  title="Crear notificación push en plataforma de Emma 
+  ">
+
+Puedes seguir este [tutorial](https://docs.emma.io/es/comunicacion/mensajes-out-app/push-notifications) para crear notificaciones push desde EMMA.
+
+![Service push](/matias/images/push-expo.png)
+
+  </Step>
+</Steps>
+
+## Pasos para la Integración de deeplink.
+
+<Steps>
+  <Step title="Configurar AndroidManifest.xml">
+
+Agregar filtros de intent y servicios necesarios para que el sistema Android y EMMA puedan interceptar deeplinks y notificaciones push.
+
+    ```kotlin title="\android\app\src\main\AndroidManifest.xml"
+
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="miApp" android:host="notification" />
+</intent-filter>
+
+    ```
+
+Permite que Android abra MainActivity cuando un link como miApp://notification sea pulsado.
+
+    ```kotlin title="\android\app\src\main\AndroidManifest.xml"
+
+<meta-data
+  android:name="io.emma.DEEPLINK_OPEN_ACTIVITY"
+  android:value="com.emmaexpotest.MainActivity" />
+
+    ```
+
+Configurar EMMADeepLinkActivity
+
+</Step>
+
+<Step title="Configurar MainActivity para capturar deeplinks">
+
+    ```kotlin title="android\app\src\main\java\com\emmaexpotest\MainActivity.kt"
+
+EMMA.getInstance().checkForRichPushUrl()
+
+    ```
+
+Para verificar si la app se abrió desde una notificación con deeplink mientras estaba cerrada.
+
+```kotlin title="android\app\src\main\java\com\emmaexpotest\MainActivity.kt"
+
+EMMA.getInstance().onNewNotification(intent, true)
+
+```
+
+Para manejar notificaciones push mientras la app está abierta.
+
+</Step>
+
+<Step title="Configurar la app React Native (JS/TS) para recibir el deeplink">
+
+```kotlin title="example\App.js"
+
+Linking.getInitialURL().then((url) => { handleURL(url); });
+
+
+```
+
+Captura deeplink mientras estaba cerrada.
+
+```kotlin title="example\App.js"
+
+Linking.getInitialURL().then((url) => { handleURL(url); });
+
+```
+
+En handleURL(url), verificar si el deeplink es miApp://notification y navegar automáticamente a la pantalla deseada (Notification).
+
+</Step>
+
+<Step title="Crear pantalla de destino en React Native">
+
+```kotlin title="example\NotificationScreen.js"
+
+import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function NotificationScreen() {
+return (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text>¡Has llegado aquí desde una notificación push!</Text>
+  </View>
+);
+}
+
+```
+
+</Step>
+
+</Steps>
+
+
+## Despliegue con EAS
+
+<Steps>
+  <Step title="Inicializar EAS">
+
+Esto creará eas.json y te pedirá vincular tu proyecto Expo.
+
+    ```kotlin title="bush"
+
+eas init
+
+    ```
+</Step>
+
+  <Step title="Configurar eas.json para Generar APK">
+
+ Configurar eas.json para Generar APK
+
+    ```kotlin title="eas.json"
+
+{
+  "cli": {
+    "version": ">= 16.7.1"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"  
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk",  
+        "gradleCommand": ":app:assembleRelease"  
+      }
+    }
+  }
+}
+
+    ```
+</Step>
+
+ <Step title="Configurar app.json para el Bundle">
+
+Expo EAS no incluye por defecto el archivo Bundle que contiene el js/ts compilado por lo tanto si no se configura este json no se empaquetara en el APK.
+
+    ```kotlin title="app.json"
+{
+  "expo": {
+    "name": "TuApp",
+    "slug": "tuapp",
+    "android": {
+      "package": "com.tuapp",
+      "versionCode": 1,
+      "bundleInProduction": true  
+    }
+  }
+
+    ```
+</Step>
+
+ <Step title=" Generar el Bundle Manualmente (recomendado)">
+
+Ejecuta este comando antes del build para asegurar que el bundle se incluya:
+
+    ```kotlin title="bush"
+npx react-native bundle \
+--platform android \
+--dev false \
+--entry-file index.js \
+--bundle-output android/app/src/main/assets/index.android.bundle \
+--assets-dest android/app/src/main/res
+
+    ```
+</Step>
+
+
+ <Step title="Construir el APK con EAS">
+
+Ejecuta el build para producción:
+
+    ```kotlin title="bush"
+eas build --platform android --profile production
+
+    ```
+</Step>
+
+<Step title="Descargar y Verificar el APK">
+
+El APK estará disponible en el [dashboard de EAS.](https://expo.dev/accounts/your-account/projects/your-project/builds)
+
+</Step>
+</Steps>
+
