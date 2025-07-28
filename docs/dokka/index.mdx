@@ -122,25 +122,6 @@ dokka {
     ```
   </Step>
 
-
-
-
-<Step title="">
-
-    ```kotlin title=""
-
-    ```
-  </Step>
-
-
-
-
-
-
-
-
-
-
     </Steps>
 
 ✅ moduleName: Nombre visible en la documentación.
@@ -153,4 +134,133 @@ dokka {
 
 ✅ footerMessage y customAssets: Personaliza logos, CSS, y pie de página.
 
-    ![Paso 1](/matias/images/dokka.png)
+
+## Automatización de despliegue
+
+objetivo principal de estos pasos es generar y desplegar documentación con Dokka (para proyectos Kotlin o Android) en GitHub Pages, cada vez que se haga un push a la rama main.
+
+<Steps>
+<Step title="Desencadenador (on)">
+
+Este workflow se ejecuta automáticamente cuando se hace un push a la rama main.
+
+    ```Yaml title="Yaml"
+    on:
+  push:
+    branches: [ main ]
+
+    ```
+</Step>
+
+<Step title="Permisos">
+
+Dar permisos 
+
+    ```Yaml title="Yaml"
+ permissions:
+  contents: write
+  pages: write
+  id-token: write
+    ```
+</Step>
+
+<Step title="Preparación del entorno">
+
+Se ejecuta en Ubuntu, luego instala JDK 17, Android SDK y finalmente se configura la identidad de Git y el entorno local.
+
+    ```Yaml title="Yaml"
+ runs-on: ubuntu-latest
+
+ - name: Set up JDK 17
+  uses: actions/setup-java@v4
+  with:
+    java-version: 17
+    distribution: temurin
+
+ - name: Set up Android SDK
+  uses: android-actions/setup-android@v3
+
+ - name: Configure Git identity
+  run: |
+    git config --global user.name "github-actions[bot]"
+    git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Configure Android environment
+  run: |
+    echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+    chmod +x ./gradlew
+
+    ```
+</Step>
+<Step title="Clonado del repositorio">
+
+Este paso usa la acción oficial actions/checkout@v4 para clonar el repositorio dentro del entorno de ejecución del workflow (runner de GitHub Actions).
+
+    ```Yaml title="Yaml"
+- name: Checkout repository
+  uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+    ```
+</Step>
+
+<Step title="Generación de la documentación">
+
+Limpia salida previa y ejecuta Dokka.
+
+    ```Yaml title="Yaml"
+- name: Clean previous Dokka output
+  run: rm -rf docs/dokka
+
+  - name: Generate Dokka documentation
+  run: ./gradlew clean dokkaGenerate --stacktrace --info
+    ```
+</Step>
+
+<Step title="Preparación para GitHub Pages">
+
+Mueve la documentación generada a public/ y agrega .nojekyll.
+
+    ```Yaml title="Yaml"
+- name: Prepare public/ for GitHub Pages
+  run: |
+    rm -rf public
+    mkdir public
+    cp -r docs/dokka/. public/
+    touch public/.nojekyll
+    ```
+</Step>
+
+ <Step title="Despliegue a GitHub Pages">
+
+Mueve la documentación generada a public/ y agrega .nojekyll.
+
+    ```Yaml title="Yaml"
+-- name: Deploy to GitHub Pages
+  id: deployment
+  uses: peaceiris/actions-gh-pages@v3
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    publish_branch: gh-pages
+    publish_dir: public
+    force_orphan: true
+    keep_files: false
+    commit_message: "docs: Update documentation via GitHub Actions"
+
+    ```
+</Step>
+
+ <Step title="Verificar Deploy">
+
+Revisar el workflow en git hub Action
+
+![Paso 1](/matias/images/git.png)
+</Step>
+
+
+</Steps>
+
+## Vista previa proyecto desplegado
+
+
+![Paso 1](/matias/images/dokka.png)
