@@ -65,6 +65,11 @@
           "title": "React Native Expo (Bare)",
           "href": "/matias/rn_expo",
           "icon": "react"
+        },
+         {
+          "title": "Flutter",
+          "href": "/matias/flutter",
+          "icon": "flutter"
         }
       ]
     },

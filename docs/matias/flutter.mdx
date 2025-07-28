@@ -1,0 +1,201 @@
+---
+title: Integración con Flutter
+description: Configuración del SDK para Android (Single-module) usando Flutter.
+---
+
+
+
+## Requisitos previos
+
+| **Componente**          | **Requerimiento**                      |
+|--------------------------|----------------------------------------|
+| **Sistema Operativo**   | Windows **10 o superior**              |
+| **Flutter SDK**         | `>=3.22.0`                             |
+| **Dart SDK**            | `>=3.8.1 <4.0.0`                       |
+| **firebase_core**       | `3.15.1`                               |
+| **firebase_messaging**  | `15.2.9`                               |
+| **emma_flutter_sdk**    | `1.6.2`                                |
+| **cupertino_icons**     | `1.0.8`                                |
+| **flutter_lints**       | `5.0.0`                                |
+
+
+<Warning>
+  Durante la primera compilación del proyecto, puede surgir el un error,debido a una incompatibilidad entre las versiones de `jvmTarget` utilizadas por Kotlin (`21`) y Java (`1.8`). La solución consiste en unificar la configuración del `jvmTarget` y los niveles de compatibilidad de Java a la versión `21` dentro del archivo `build.gradle.kts`, tanto para los módulos Kotlin como Java.
+
+**Aplicar esta configuración asegura que todas las tareas de compilación apunten a una misma versión de la máquina virtual, resolviendo el conflicto.**
+</Warning>
+
+## [📦 Descargar APK](https://tusitio.com/app-release.apk)
+
+## [🔧 Repositorio](https://tusitio.com/app-release.apk)
+
+## Integrar el SDK de EMMA con Flutter.
+
+<Steps>
+  <Step title="Crear proyecto">
+    Crear proyecto con Flutter
+
+    ```bash title="bash"
+  flutter create example_app
+    ```
+
+  </Step>
+<Step title="Configurar pubspec.yaml ">
+En el pubspec.yaml añade la siguiente línea:
+
+    ```bash title="pubspec.yaml"
+    dependencies:
+    emma_flutter_sdk: 1.6.2
+    ```
+  </Step>
+
+  
+ <Step title="Iniciar sesión del SDK ">
+  Actualmente, la clase StartSession debe importarse de forma explícita.
+`import 'package:emma_flutter_sdk/src/start_session.dart';`
+
+ ```bash title="main.dart"
+ 
+    @override
+ void initState() {
+   super.initState();
+   initPlatformState();
+   initEMMA()
+ }
+
+ final startSessionParams = StartSession(
+   sessionKey: "<EMMAKey>",
+   queueTime: 10,
+   isDebug: true,
+   customShortPowlinkDomains: ["emma.shortLink.mycompany.com"],
+   customPowlinkDomains: ["emma.link.mycompany.com"],
+   trackScreenEvents: false,
+   familiesPolicyTreatment: (Platform.isAndroid) ? true : false,
+ );
+
+ Future<void> initEMMA() async {
+   await EmmaFlutterSdk.shared
+       .startSession(startSessionParams);
+ }
+    ```
+
+  </Step>
+</Steps>
+
+## Pasos para la Integración Notificaciones Push.
+<Steps>
+<Step
+title="Generar clave privada JSON
+">
+
+Genera un archivo **JSON** de **clave privada**  entrando en la **configuración** de tu proyecto de Firebase , **Cuentas de servicio**, y generar **nueva clave privada**.
+
+
+![Clave privada](/matias/images/clave-privada.png)
+
+</Step>
+
+<Step
+title="Configurar la plataforma EMMA
+">
+
+Además debes configurar la plataforma EMMA con ese **archivo JSON** de la siguiente manera; Entra al menu del **borde superior** y accede a **preferencias app**, has click en **Selecciona un fichero JSON**.
+
+
+![Clave privada json](/matias/images/json.png)
+
+</Step>
+
+<Step
+title="Integrar FCM en tu Service
+">
+
+Hay que añadir el siguiente service al **AndroidManifest.xml**:
+
+
+  ```kotlin title="android\app\src\main\AndroidManifest.xml"
+<service
+  android:name="io.emma.android.push.EMMAFcmMessagingService"
+  android:enabled="true"
+  android:exported="false">
+  <intent-filter>
+  <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+  </intent-filter>
+</service>
+````
+
+![Service push](/matias/images/push.png)
+
+  </Step>
+
+  <Step 
+  title="Configurar dependencias de Google Services nivel proyect
+  ">
+
+Agrega el classpath en el archivo de Gradle build.gradle.kts a nivel de proyecto: [Aquí](https://firebase.google.com/docs/android/setup?hl=es&authuser=0&_gl=1*cwj5ie*_ga*MzY1NTAyNTYwLjE3MzgyODU5NjU.*_ga_CW55HF8NVT*MTc0NDI3NjkxOS4zMi4xLjE3NDQyNzY5NTAuMjkuMC4w) más información sobre integración de Firebase
+
+    ```kotlin title="settings.gradle.kts(:project)"
+
+    classpath 'com.google.gms:google-services:4.4.2'
+
+````
+
+</Step>
+
+  <Step
+title="Configurar dependencias de Google Services nivel app
+">
+Agrega el complemento de los servicios de Google en el archivo de Gradle **build.gradle.kts** a nivel de app.
+
+  ```kotlin title="\android\app\build.gradle"
+
+apply plugin: "com.google.gms.google-services"
+````
+
+Agrega los SDK de Firebase a tu app en el archivo Gradle build.gradle.kts a nivel de app, agrega las dependencias de los productos de Firebase que quieras usar en tu app. Es recomendable que uses la Firebase Android BoM para controlar las versiones de las bibliotecas.
+
+    ```kotlin title="settings.gradle.kts(:app)"
+
+implementation platform('com.google.firebase:firebase-bom:33.15.0')
+
+````
+</Step>
+
+  <Step
+title="Iniciando el sistema de push
+">
+
+Añade el startPushSystem en el archivo main.dart después del startSession:
+
+  ```dart title="main.dart"
+
+Future<void> initEMMA() async {
+  await EmmaFlutterSdk.shared
+      .startSession('<SESSION_KEY>', debugEnabled: true);
+
+  await EmmaFlutterSdk.shared.startPushSystem('icimage');
+}
+````
+
+<Info>
+  Desde Android 13, para recibir notificaciones es necesario solicitar un
+  permiso al usuario. Para ello, EMMA ha añadido un método al SDK disponible en
+  la versión 4.12 o superiores. (En mi caso uso API 29), por lo tanto, no lo
+  implementaré, este método tiene que ser llamado en un Activity.
+</Info>
+
+  </Step>
+
+ <Step 
+  title="Crear notificación push en plataforma de Emma 
+  ">
+
+Puedes seguir este [tutorial](https://docs.emma.io/es/comunicacion/mensajes-out-app/push-notifications) para crear notificaciones push desde EMMA.
+
+![Service push](/matias/images/push-expo.png)
+
+  </Step>
+</Steps>
+
+
+
